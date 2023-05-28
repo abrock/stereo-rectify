@@ -1,8 +1,29 @@
 #include "cam.h"
 
+#include <opencv2/highgui.hpp>
+
 Cam::Cam()
 {
 
+}
+
+void Cam::setSize(const cv::Size &s) {
+    size = s;
+    scale = std::sqrt(s.area())/100;
+}
+
+void Cam::setImg(const std::shared_ptr<cv::Mat> &_img) {
+    setSize(_img->size());
+    img = _img;
+}
+
+void Cam::computeKeyPoints() {
+    int const n_features = 1'000;
+    auto detector = cv::ORB::create(n_features);
+    auto matcher = cv::xfeatures2d::BEBLID::create(1.0);
+    std::vector<cv::KeyPoint> pts;
+    detector->detect(*img, key_pts);
+    matcher->compute(*img, key_pts, descriptors);
 }
 
 template<class T>
@@ -11,8 +32,7 @@ bool Cam::project(T const * const pt,
                   T const * const f,
                   T & res_x,
                   T & res_y) {
-    switch (proj)
-    {
+    switch (proj) {
     case Projection::rectilinear:
         res_x = pt[0]/pt[2]*f[0] + c[0];
         res_y = pt[1]/pt[2]*f[0] + c[1];
@@ -26,7 +46,6 @@ bool Cam::project(T const * const pt,
         res_y = res_y*factor*f[0] + c[1];
         return true;
     }
-
     return false;
 }
 
