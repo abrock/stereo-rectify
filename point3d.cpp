@@ -70,6 +70,7 @@ double Point3D::triangulate(bool const verbose) {
     ceres::Solver::Summary summary;
 
     ceres_opts.minimizer_progress_to_stdout = verbose;
+    ceres_opts.logging_type = ceres::LoggingType::SILENT;
     ceres_opts.linear_solver_type = ceres::DENSE_QR;
     ceres_opts.max_num_iterations = 2000;
     //ceres_opts.num_linear_solver_threads = std::thread::hardware_concurrency();
