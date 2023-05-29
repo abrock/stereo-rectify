@@ -38,6 +38,8 @@ public:
 
     std::vector<std::shared_ptr<Observation>> observations;
 
+    std::string fn;
+
     /**
      * @brief The "scale" is 1% or the diagonal in px
      */
@@ -124,6 +126,9 @@ public:
 
     std::string print() const;
 
+    void plotResiduals() const;
+
+    bool validSrcPx(const cv::Point2d &src_px) const;
 };
 
 #endif // CAM_H

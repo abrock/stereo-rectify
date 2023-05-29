@@ -19,6 +19,13 @@ public:
 
     static double distKP(cv::KeyPoint const& a, cv::KeyPoint const& b);
     ceres::ResidualBlockId addSFMBlock(ceres::Problem &problem);
+
+    cv::Vec3d ptInCam() const;
+
+    cv::Vec2d project() const;
+    cv::Point2d projectPt() const;
+
+    double error() const;
 };
 
 class Point3D
@@ -28,12 +35,19 @@ public:
 
     cv::Vec3d loc;
 
+    double max_error = -1;
+
+    bool used = false;
+
     std::vector<std::shared_ptr<Observation> > observations;
 
     bool findByCam(std::shared_ptr<Cam> const& c, std::shared_ptr<Observation>& result);
 
     void addSFMBlocks(ceres::Problem& problem);
-    double triangulate();
+    double triangulate(const bool verbose = false);
+
+    cv::Vec3d inCam(std::shared_ptr<Cam> cam) const;
+    double triangulateRANSAC(const bool verbose = false);
 };
 
 #endif // POINT3D_H

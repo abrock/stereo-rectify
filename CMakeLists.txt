@@ -12,6 +12,9 @@ find_package(RunningStats REQUIRED)
 
 find_package(Boost COMPONENTS system filesystem iostreams REQUIRED)
 
+find_package(GTest REQUIRED)
+
+
 set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} " -Werror=return-type")
 
 add_executable(stereo-rectify
@@ -25,6 +28,22 @@ add_executable(stereo-rectify
 
 target_link_libraries(stereo-rectify
     ceres
+    ${OpenCV_LIBRARIES}
+    ${RUNNINGSTATS_LIBRARIES}
+    )
+
+add_executable(test
+    tests.cpp
+    calib.cpp
+    cam.cpp
+    extr.cpp
+    misc.cpp
+    point3d.cpp
+    )
+
+target_link_libraries(test
+    ceres
+    GTest::gtest
     ${OpenCV_LIBRARIES}
     ${RUNNINGSTATS_LIBRARIES}
     )

@@ -45,7 +45,7 @@ void Cam::setImg(const std::shared_ptr<cv::Mat> &_img) {
 }
 
 void Cam::computeKeyPoints() {
-    int const n_features = 10'000;
+    int const n_features = 100'000;
     auto detector = cv::ORB::create(n_features);
     auto matcher = cv::xfeatures2d::BEBLID::create(1.0);
     std::vector<cv::KeyPoint> pts;
@@ -58,7 +58,7 @@ void Cam::computeKeyPoints() {
 cv::Vec2d Cam::project(cv::Vec3d pt) {
     CHECK_GT(f, 0);
     cv::Vec2d result;
-    project(pt.val, c.val, &f, result[0], result[1]);
+    project(pt.val, result[0], result[1]);
     return result;
 }
 
@@ -77,6 +77,20 @@ void Cam::setConstant(ceres::Problem &problem) {
     setExtrinsicsConstant(problem);
 }
 
+bool Cam::validSrcPx(const cv::Point2d &src_px) const {
+    switch (proj) {
+    case Projection::rectilinear:
+        return true;
+    case Projection::equidistant:
+        cv::Vec2d result;
+        result[0] = (src_px.x - c[0]) / f;
+        result[1] = (src_px.y - c[1]) / f;
+        double const r = cv::norm(result);
+        return r < M_PI_2;
+    }
+    return false;
+}
+
 cv::Vec3d Cam::unproject(const cv::Point2d &src_px, double const z) const {
     cv::Vec3d result(0,0,0);
     switch (proj) {
@@ -88,6 +102,7 @@ cv::Vec3d Cam::unproject(const cv::Point2d &src_px, double const z) const {
         result[0] = (src_px.x - c[0]) / f;
         result[1] = (src_px.y - c[1]) / f;
         double const r = cv::norm(result);
+        CHECK_LT(r, M_PI_2);
         double const factor = std::tan(r)/r;
         result *= factor * z;
         break;
@@ -129,6 +144,29 @@ cv::Mat Cam::map2target(std::shared_ptr<Cam> target) {
 
 std::string Cam::print() const {
     std::stringstream out;
-    out << "f: " << f << ", size: " << size << ", extr: loc " << extr.loc << ", rot " << extr.rot;
+    out << "f: " << f << ", size: " << size << ", extr: loc " << extr.loc << "(" << cv::norm(extr.loc) << "), rot " << extr.rot;
     return out.str();
+}
+
+void Cam::plotResiduals() const {
+    cv::Mat img_grey;
+    cv::cvtColor(*img, img_grey, cv::COLOR_BGR2GRAY);
+    cv::cvtColor(img_grey, img_grey, cv::COLOR_GRAY2BGR);
+
+    double const linewidth = diag / 1'000;
+    for (auto obs : observations) {
+        cv::circle(img_grey, obs->pt.pt, linewidth*2, cv::Scalar(255,0,0), linewidth/2, cv::LINE_AA);
+    }
+    for (auto obs : observations) {
+        if (!obs->pt3d->used) {
+            cv::line(img_grey, obs->projectPt(), obs->pt.pt, cv::Scalar(0,0,255), linewidth, cv::LINE_AA);
+        }
+    }
+    for (auto obs : observations) {
+        if (obs->pt3d->used) {
+            cv::line(img_grey, obs->projectPt(), obs->pt.pt, cv::Scalar(0,255,0), linewidth, cv::LINE_AA);
+        }
+    }
+
+    cv::imwrite(fn + "-proj.tif", img_grey);
 }

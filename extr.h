@@ -14,6 +14,9 @@ class Extr
 public:
     Extr();
 
+    cv::Vec3d world2cam(cv::Vec3d const& in) const;
+    cv::Vec3d cam2world(cv::Vec3d const& in) const;
+
     template<class T>
     static void world2cam(
             T const * const pt,

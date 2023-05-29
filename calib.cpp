@@ -101,6 +101,23 @@ std::string Calib::matchStats() {
     return out.str();
 }
 
+struct KeepNormCost {
+    double distance;
+    double weight;
+
+    template<class T>
+    bool operator()(T const * const vec, T * residual) const {
+        residual[0] = ceres::sqrt(vec[0]*vec[0] + vec[1]*vec[1] + vec[2]*vec[2]) - T(distance);
+        return true;
+    }
+
+    static ceres::CostFunction* create(double const dist, double const w = 1'000) {
+        return new ceres::AutoDiffCostFunction<KeepNormCost, 1, 3>(
+                    new KeepNormCost{dist, w}
+                    );
+    }
+};
+
 struct SimpleRotationCost {
     cv::Vec2d src;
     cv::Vec2d tgt;
@@ -212,12 +229,14 @@ void Calib::refineOrientationSimple(std::shared_ptr<Cam> cam_ref, std::shared_pt
     for (auto obs_ref : cam_ref->observations) {
         std::shared_ptr<Observation> obs_tgt;
         if (obs_ref->pt3d->findByCam(cam_tgt, obs_tgt)) {
-            problem.AddResidualBlock(
-                        SimpleOrientationCost::create(cam_ref, cam_tgt, obs_ref->pt.pt, obs_tgt->pt.pt),
-                        new ceres::CauchyLoss(cam_ref->scale),
-                        cam_ref->extr.rot.val,
-                        cam_tgt->extr.rot.val
-                        );
+            if (cam_tgt->validSrcPx(obs_tgt->pt.pt)) {
+                problem.AddResidualBlock(
+                            SimpleOrientationCost::create(cam_ref, cam_tgt, obs_ref->pt.pt, obs_tgt->pt.pt),
+                            new ceres::CauchyLoss(cam_ref->scale),
+                            cam_ref->extr.rot.val,
+                            cam_tgt->extr.rot.val
+                            );
+            }
         }
     }
     problem.SetParameterBlockConstant(cam_ref->extr.rot.val);
@@ -234,28 +253,68 @@ void Calib::refineOrientationSimple(std::shared_ptr<Cam> cam_ref, std::shared_pt
     std::cout << summary.FullReport() << std::endl;
 }
 
-void Calib::triangulateAll() {
+void Calib::triangulateAll(std::string const& plot_prefix) {
+    triangulation_error_stats.clear();
     for (auto pt : points) {
         pt->triangulate();
+        triangulation_error_stats.push_unsafe(pt->max_error);
+    }
+    if (!plot_prefix.empty()) {
+        triangulation_error_stats.plotHistAndCDF(plot_prefix + "-triangulation-errors", rs::HistConfig()
+                                                 .setDataLabel("Triangulation reprojection errors [px]")
+                                                 .setLogX());
     }
 }
 
-void Calib::optimizeSFM() {
-    triangulateAll();
+void Calib::triangulateAllRANSAC(std::string const& plot_prefix) {
+    int const num = 100;
+    int const step = points.size() / num;
+    std::cout << "Running Calib::triangulateAllRANSAC" << std::endl << std::string(num, '-') << std::endl;
+    triangulation_error_stats.clear();
+
+    for (size_t ii = 0; ii < points.size(); ++ii) {
+        auto pt = points[ii];
+        pt->triangulateRANSAC();
+        triangulation_error_stats.push_unsafe(pt->max_error);
+        if (ii % step == 0) {
+            std::cout << "." << std::flush;
+        }
+    }
+    std::cout << std::endl;
+    if (!plot_prefix.empty()) {
+        triangulation_error_stats.plotHistAndCDF(plot_prefix + "-triangulation-errors", rs::HistConfig()
+                                                 .setDataLabel("Triangulation reprojection errors [px]")
+                                                 .setLogX());
+    }
+}
+
+void Calib::optimizeSFM(std::string const& plot_prefix) {
+    triangulateAllRANSAC(plot_prefix);
     ceres::Problem problem;
+    double const error_threshold = triangulation_error_stats.getQuantile(.8);
     for (auto pt : points) {
-        pt->addSFMBlocks(problem);
+        pt->used = false;
+        if (pt->max_error < error_threshold) {
+            pt->addSFMBlocks(problem);
+            pt->used = true;
+        }
     }
     for (auto cam : cams) {
         cam->setIntrinsicsConstant(problem);
+        problem.AddResidualBlock(
+                    KeepNormCost::create(cv::norm(cam->extr.loc)),
+                    nullptr,
+                    cam->extr.loc.val
+                    );
     }
     cams[0]->setExtrinsicsConstant(problem);
+
 
     ceres::Solver::Options ceres_opts;
     ceres::Solver::Summary summary;
 
     ceres_opts.minimizer_progress_to_stdout = true;
-    ceres_opts.linear_solver_type = ceres::DENSE_QR;
+    ceres_opts.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
     ceres_opts.max_num_iterations = 2000;
     //ceres_opts.num_linear_solver_threads = std::thread::hardware_concurrency();
 
@@ -270,6 +329,12 @@ std::string Calib::printCams() const {
         out << "#" << ii << ": " << cams[ii]->print() << std::endl;
     }
     return out.str();
+}
+
+void Calib::plotResiduals() const {
+    for (auto cam : cams) {
+        cam->plotResiduals();
+    }
 }
 
 

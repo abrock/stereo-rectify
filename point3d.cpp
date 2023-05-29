@@ -1,5 +1,7 @@
 #include "point3d.h"
 
+#include <random>
+
 Point3D::Point3D()
 {
 
@@ -23,7 +25,31 @@ void Point3D::addSFMBlocks(ceres::Problem &problem) {
     }
 }
 
-double Point3D::triangulate() {
+double Point3D::triangulateRANSAC(bool const verbose) {
+    // If no previous result is present, run initial triangulation
+    if (max_error < 0) {
+        triangulate(verbose);
+    }
+    std::mt19937_64 engine{std::random_device()()};
+    cv::Vec3d best_result = loc;
+    double best_error = max_error;
+    for (size_t ii = 0; ii < 50; ++ii) {
+        double const z = std::uniform_real_distribution<double>(100, 3'000)(engine);
+        double const x = std::uniform_real_distribution<double>(-z, z)(engine);
+        double const y = std::uniform_real_distribution<double>(-z, z)(engine);
+        loc = cv::Vec3d(x,y,z);
+        triangulate(verbose);
+        if (max_error < best_error && max_error >= 0) {
+            best_error = max_error;
+            best_result = loc;
+        }
+    }
+    loc = best_result;
+    max_error = best_error;
+    return max_error;
+}
+
+double Point3D::triangulate(bool const verbose) {
     if (observations.size() < 2) {
         return -1;
     }
@@ -40,15 +66,31 @@ double Point3D::triangulate() {
     ceres::Solver::Options ceres_opts;
     ceres::Solver::Summary summary;
 
-    ceres_opts.minimizer_progress_to_stdout = true;
+    ceres_opts.minimizer_progress_to_stdout = verbose;
     ceres_opts.linear_solver_type = ceres::DENSE_QR;
     ceres_opts.max_num_iterations = 2000;
     //ceres_opts.num_linear_solver_threads = std::thread::hardware_concurrency();
 
-    std::cout << "###### Solving triangulation problem ######" << std::endl;
+    if (verbose)
+        std::cout << "###### Solving triangulation problem ######" << std::endl;
+
     ceres::Solve(ceres_opts, &problem, &summary);
-    std::cout << summary.FullReport() << std::endl;
-    return summary.final_cost / problem.NumResidualBlocks();
+
+    if (verbose)
+        std::cout << summary.FullReport() << std::endl;
+
+    max_error = 0;
+    for (auto obs : observations) {
+        max_error = std::max(max_error, obs->error());
+    }
+
+    return max_error;
+}
+
+cv::Vec3d Point3D::inCam(std::shared_ptr<Cam> cam) const {
+    cv::Vec3d result;
+    Extr::world2cam(loc.val, cam->extr.loc.val, cam->extr.rot.val, result.val);
+    return result;
 }
 
 struct SFMCost {
@@ -99,13 +141,30 @@ struct SFMCost {
 ceres::ResidualBlockId Observation::addSFMBlock(ceres::Problem &problem) {
     return problem.AddResidualBlock(
                 SFMCost::create(shared_from_this(), cam),
-                new ceres::CauchyLoss(cam->scale),
+                nullptr, // new ceres::CauchyLoss(cam->scale),
                 pt3d->loc.val,
                 cam->extr.rot.val,
                 cam->extr.loc.val,
                 cam->c.val,
                 &cam->f
                 );
+}
+
+cv::Vec3d Observation::ptInCam() const {
+    return pt3d->inCam(cam);
+}
+
+cv::Vec2d Observation::project() const {
+    return cam->project(ptInCam());
+}
+
+cv::Point2d Observation::projectPt() const {
+    cv::Vec2d const proj = project();
+    return {proj[0], proj[1]};
+}
+
+double Observation::error() const {
+    return cv::norm(project() - cv::Vec2d(pt.pt.x, pt.pt.y));
 }
 
 double Observation::distKP(const cv::KeyPoint &a, const cv::KeyPoint &b) {

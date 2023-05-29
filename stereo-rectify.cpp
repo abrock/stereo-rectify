@@ -52,11 +52,13 @@ int main(int argc, char ** argv) {
 
     std::shared_ptr<Cam> cam_l = std::make_shared<Cam>();
     cam_l->setImg(left);
+    cam_l->fn = left_img_arg.getValue();
     cam_l->setFocal(f);
     cam_l->setProjection(proj_arg.getValue());
 
     std::shared_ptr<Cam> cam_r = std::make_shared<Cam>();
     cam_r->setImg(right);
+    cam_r->fn = right_img_arg.getValue();
     cam_r->setFocal(f_r);
     cam_r->setProjection(proj_right_arg.isSet() ? proj_right_arg.getValue() : proj_arg.getValue());
 
@@ -96,8 +98,12 @@ int main(int argc, char ** argv) {
     cv::imwrite(left_img_arg.getValue() + "-simple-orientation.tif", calib->cams[0]->map2target(target_cam));
     cv::imwrite(right_img_arg.getValue() + "-simple-orientation.tif", calib->cams[1]->map2target(target_cam));
 
-    calib->optimizeSFM();
-    std::cout << "Cams: " << std::endl << calib->printCams() << std::endl;
+    for (size_t ii = 0; ii < 5; ++ii) {
+        calib->optimizeSFM(left_img_arg.getValue() + "-it-" + std::to_string(ii));
+        std::cout << "Cams: " << std::endl << calib->printCams() << std::endl;
+    }
+
+    calib->plotResiduals();
 
 
     cv::imwrite(left_img_arg.getValue() + "-sfm-rot.tif", calib->cams[0]->map2target(target_cam));
