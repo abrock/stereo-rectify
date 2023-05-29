@@ -9,7 +9,10 @@ Cam::Cam()
 
 void Cam::setSize(const cv::Size &s) {
     size = s;
-    scale = std::sqrt(s.area())/100;
+    diag = std::sqrt(s.area());
+    scale = diag/100;
+    c[0] = double(s.width-1)/2;
+    c[1] = double(s.height-1)/2;
 }
 
 void Cam::setImg(const std::shared_ptr<cv::Mat> &_img) {
@@ -52,5 +55,12 @@ bool Cam::project(T const * const pt,
 cv::Vec2d Cam::project(cv::Vec3d pt) {
     cv::Vec2d result;
     project(pt.val, c.val, &f, result[0], result[1]);
+    return result;
+}
+
+cv::Vec2d Cam::getCenteredPoint(const cv::KeyPoint &pt) const {
+    cv::Vec2d result(pt.pt.x, pt.pt.y);
+    result -= c;
+    result *= 2.0/diag;
     return result;
 }

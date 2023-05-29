@@ -62,5 +62,8 @@ int main(int argc, char ** argv) {
     std::cout << "Match stats: " << std::endl
               << calib->matchStats() << std::endl;
 
+    std::pair<double, double> const rot = calib->computeRotationMultiple(calib->cams[0], calib->cams[1]);
+    std::cout << "Rotation: " << rot.first << std::endl;
+
     return EXIT_SUCCESS;
 }

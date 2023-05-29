@@ -7,7 +7,7 @@
 #include "point3d.h"
 
 class Calib {
-    std::shared_ptr<Point3D> findOrMake(int const idx, const cv::KeyPoint &kp);
+    std::shared_ptr<Point3D> findOrMake(const std::shared_ptr<Cam> cam, int const idx, const cv::KeyPoint &kp);
 public:
     Calib();
 
@@ -18,7 +18,10 @@ public:
     std::vector<std::shared_ptr<Point3D>> points;
     std::string matchStats();
 
-    std::pair<double, double> computeRotation(std::shared_ptr<Cam> cam1, std::shared_ptr<Cam> cam2) const;
+    std::pair<double, double> computeRotation(std::shared_ptr<Cam> cam1, std::shared_ptr<Cam> cam2, const double initial) const;
+
+    std::pair<double, double> computeRotationMultiple(std::shared_ptr<Cam> cam1, std::shared_ptr<Cam> cam2) const;
+
 };
 
 #endif // CALIB_H

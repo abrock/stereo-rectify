@@ -32,6 +32,11 @@ public:
      */
     double scale = -1;
 
+    /**
+     * @brief The length of the image diagonal in px
+     */
+    double diag = -1;
+
     void setSize(cv::Size const& s);
 
     void setImg(const std::shared_ptr<cv::Mat> &_img);
@@ -63,6 +68,9 @@ public:
             T & res_y);
 
     Extr extr;
+
+
+    cv::Vec2d getCenteredPoint(const cv::KeyPoint &pt) const;
 
 };
 

@@ -19,6 +19,7 @@ add_executable(stereo-rectify
     calib.cpp
     cam.cpp
     extr.cpp
+    misc.cpp
     point3d.cpp
     )
 
