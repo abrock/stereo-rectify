@@ -95,22 +95,28 @@ int main(int argc, char ** argv) {
     cv::imwrite(right_img_arg.getValue() + "-simple-rot.tif", calib->cams[1]->map2target(target_cam));
     */
 
+    /*
     calib->refineOrientationSimple(calib->cams[0], calib->cams[1]);
     std::cout << "Cams: " << std::endl << calib->printCams() << std::endl;
 
     cv::imwrite(left_img_arg.getValue() + "-simple-orientation.tif", calib->cams[0]->map2target(target_cam));
     cv::imwrite(right_img_arg.getValue() + "-simple-orientation.tif", calib->cams[1]->map2target(target_cam));
-
+    */
+    /*
     for (size_t ii = 0; ii < 5; ++ii) {
         calib->optimizeSFM(left_img_arg.getValue() + "-it-" + std::to_string(ii));
-        std::cout << "Cams: " << std::endl << calib->printCams() << std::endl;
+        std::cout << "Cams: " << std::endl << calib->printCams() << "t: " << target_cam->print() << std::endl;
     }
 
     calib->plotResiduals();
-
-
     cv::imwrite(left_img_arg.getValue() + "-sfm-rot.tif", calib->cams[0]->map2target(target_cam));
     cv::imwrite(right_img_arg.getValue() + "-sfm-rot.tif", calib->cams[1]->map2target(target_cam));
+    */
+
+    calib->optimizeStereoDirect(cam_l, cam_r, target_cam);
+    std::cout << "Cams: " << std::endl << calib->printCams() << "t: " << target_cam->print() << std::endl;
+    cv::imwrite(left_img_arg.getValue() + "-stereo-direct.tif", calib->cams[0]->map2target(target_cam));
+    cv::imwrite(right_img_arg.getValue() + "-stereo-direct.tif", calib->cams[1]->map2target(target_cam));
 
     return EXIT_SUCCESS;
 }

@@ -17,6 +17,10 @@ public:
     cv::Vec3d world2cam(cv::Vec3d const& in) const;
     cv::Vec3d cam2world(cv::Vec3d const& in) const;
 
+    static cv::Vec3d normalize(cv::Vec3d const& in);
+
+    void normalize();
+
     template<class T>
     static void world2cam(
             T const * const pt,

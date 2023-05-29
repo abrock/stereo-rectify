@@ -129,6 +129,7 @@ public:
     void plotResiduals() const;
 
     bool validSrcPx(const cv::Point2d &src_px) const;
+
 };
 
 #endif // CAM_H
