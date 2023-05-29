@@ -3,6 +3,7 @@
 
 #include <opencv2/core.hpp>
 
+#include <ceres/ceres.h>
 #include <ceres/rotation.h>
 
 /**
@@ -39,6 +40,8 @@ public:
             res[ii] -= loc[ii];
         }
     }
+
+    void setConstant(ceres::Problem& problem);
 
     cv::Vec3d loc{0,0,0};
     cv::Vec3d rot{0,0,0};

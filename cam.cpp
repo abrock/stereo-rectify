@@ -45,7 +45,7 @@ void Cam::setImg(const std::shared_ptr<cv::Mat> &_img) {
 }
 
 void Cam::computeKeyPoints() {
-    int const n_features = 1'000;
+    int const n_features = 10'000;
     auto detector = cv::ORB::create(n_features);
     auto matcher = cv::xfeatures2d::BEBLID::create(1.0);
     std::vector<cv::KeyPoint> pts;
@@ -53,34 +53,28 @@ void Cam::computeKeyPoints() {
     matcher->compute(*img, key_pts, descriptors);
 }
 
-template<class T>
-bool Cam::project(T const * const pt,
-                  T const * const c,
-                  T const * const f,
-                  T & res_x,
-                  T & res_y) {
-    switch (proj) {
-    case Projection::rectilinear:
-        res_x = pt[0]/pt[2]*f[0] + c[0];
-        res_y = pt[1]/pt[2]*f[0] + c[1];
-        return true;
-    case Projection::equidistant:
-        res_x = pt[0]/pt[2];
-        res_y = pt[1]/pt[2];
-        T const r = ceres::sqrt(res_x*res_x + res_y*res_y);
-        T const factor = ceres::atan(r)/r;
-        res_x = res_x*factor*f[0] + c[0];
-        res_y = res_y*factor*f[0] + c[1];
-        return true;
-    }
-    return false;
-}
+
 
 cv::Vec2d Cam::project(cv::Vec3d pt) {
     CHECK_GT(f, 0);
     cv::Vec2d result;
     project(pt.val, c.val, &f, result[0], result[1]);
     return result;
+}
+
+void Cam::setIntrinsicsConstant(ceres::Problem &problem) {
+    for (double * block : {&f, c.val}) {
+        problem.SetParameterBlockConstant(block);
+    }
+}
+
+void Cam::setExtrinsicsConstant(ceres::Problem &problem) {
+    extr.setConstant(problem);
+}
+
+void Cam::setConstant(ceres::Problem &problem) {
+    setIntrinsicsConstant(problem);
+    setExtrinsicsConstant(problem);
 }
 
 cv::Vec3d Cam::unproject(const cv::Point2d &src_px, double const z) const {

@@ -6,8 +6,9 @@
 #include "cam.h"
 
 class Point3D;
+class Cam;
 
-class Observation {
+class Observation : public std::enable_shared_from_this<Observation> {
 public:
     cv::KeyPoint pt;
     int idx;
@@ -17,6 +18,7 @@ public:
     std::shared_ptr<Cam> cam;
 
     static double distKP(cv::KeyPoint const& a, cv::KeyPoint const& b);
+    ceres::ResidualBlockId addSFMBlock(ceres::Problem &problem);
 };
 
 class Point3D
@@ -29,6 +31,9 @@ public:
     std::vector<std::shared_ptr<Observation> > observations;
 
     bool findByCam(std::shared_ptr<Cam> const& c, std::shared_ptr<Observation>& result);
+
+    void addSFMBlocks(ceres::Problem& problem);
+    double triangulate();
 };
 
 #endif // POINT3D_H

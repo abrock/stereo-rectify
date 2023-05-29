@@ -81,9 +81,15 @@ int main(int argc, char ** argv) {
     target_cam->setSize({3000, 2000});
     target_cam->setFocal(4);
 
+    /*
     cv::imwrite(left_img_arg.getValue() + "-simple-rot.tif", calib->cams[0]->map2target(target_cam));
-
     cv::imwrite(right_img_arg.getValue() + "-simple-rot.tif", calib->cams[1]->map2target(target_cam));
+    */
+
+    calib->optimizeSFM();
+
+    cv::imwrite(left_img_arg.getValue() + "-sfm-rot.tif", calib->cams[0]->map2target(target_cam));
+    cv::imwrite(right_img_arg.getValue() + "-sfm-rot.tif", calib->cams[1]->map2target(target_cam));
 
     return EXIT_SUCCESS;
 }

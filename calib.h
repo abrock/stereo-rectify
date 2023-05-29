@@ -22,6 +22,10 @@ public:
 
     std::pair<double, double> computeRotationMultiple(std::shared_ptr<Cam> cam1, std::shared_ptr<Cam> cam2) const;
 
+    void triangulateAll();
+
+    void optimizeSFM();
+
 };
 
 #endif // CALIB_H

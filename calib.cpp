@@ -163,4 +163,34 @@ std::pair<double, double> Calib::computeRotationMultiple(std::shared_ptr<Cam> ca
     return best;
 }
 
+void Calib::triangulateAll() {
+    for (auto pt : points) {
+        pt->triangulate();
+    }
+}
+
+void Calib::optimizeSFM() {
+    triangulateAll();
+    ceres::Problem problem;
+    for (auto pt : points) {
+        pt->addSFMBlocks(problem);
+    }
+    for (auto cam : cams) {
+        cam->setIntrinsicsConstant(problem);
+    }
+    cams[0]->setExtrinsicsConstant(problem);
+
+    ceres::Solver::Options ceres_opts;
+    ceres::Solver::Summary summary;
+
+    ceres_opts.minimizer_progress_to_stdout = true;
+    ceres_opts.linear_solver_type = ceres::DENSE_QR;
+    ceres_opts.max_num_iterations = 2000;
+    //ceres_opts.num_linear_solver_threads = std::thread::hardware_concurrency();
+
+    std::cout << "###### Solving large SFM problem ######" << std::endl;
+    ceres::Solve(ceres_opts, &problem, &summary);
+    std::cout << summary.FullReport() << std::endl;
+}
+
 

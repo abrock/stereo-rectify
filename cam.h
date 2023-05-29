@@ -6,6 +6,7 @@
 #include <ceres/ceres.h>
 
 #include "extr.h"
+#include "point3d.h"
 
 #include <opencv2/features2d.hpp>
 #include <opencv2/xfeatures2d.hpp>
@@ -77,7 +78,27 @@ public:
             const T * const c,
             const T * const f,
             T & res_x,
-            T & res_y);
+            T & res_y) {
+        switch (proj) {
+        case Projection::rectilinear:
+            res_x = pt[0]/pt[2]*f[0] + c[0];
+            res_y = pt[1]/pt[2]*f[0] + c[1];
+            return true;
+        case Projection::equidistant:
+            res_x = pt[0]/pt[2];
+            res_y = pt[1]/pt[2];
+            T const r = ceres::sqrt(res_x*res_x + res_y*res_y);
+            T const factor = ceres::atan(r)/r;
+            res_x = res_x*factor*f[0] + c[0];
+            res_y = res_y*factor*f[0] + c[1];
+            return true;
+        }
+        return false;
+    }
+
+    void setIntrinsicsConstant(ceres::Problem& problem);
+    void setExtrinsicsConstant(ceres::Problem& problem);
+    void setConstant(ceres::Problem& problem);
 
     cv::Vec3d unproject(cv::Point2d const& src_px, const double z = 1'000) const;
 
