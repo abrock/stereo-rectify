@@ -45,7 +45,7 @@ double Point3D::triangulate() {
     ceres_opts.max_num_iterations = 2000;
     //ceres_opts.num_linear_solver_threads = std::thread::hardware_concurrency();
 
-    std::cout << "###### Solving problem ######" << std::endl;
+    std::cout << "###### Solving triangulation problem ######" << std::endl;
     ceres::Solve(ceres_opts, &problem, &summary);
     std::cout << summary.FullReport() << std::endl;
     return summary.final_cost / problem.NumResidualBlocks();

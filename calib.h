@@ -22,9 +22,13 @@ public:
 
     std::pair<double, double> computeRotationMultiple(std::shared_ptr<Cam> cam1, std::shared_ptr<Cam> cam2) const;
 
+    static void refineOrientationSimple(std::shared_ptr<Cam> cam_ref, std::shared_ptr<Cam> cam_tgt);
+
     void triangulateAll();
 
     void optimizeSFM();
+
+    std::string printCams() const;
 
 };
 

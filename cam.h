@@ -1,6 +1,8 @@
 #ifndef CAM_H
 #define CAM_H
 
+#include <vector>
+
 #include <opencv2/core.hpp>
 
 #include <ceres/ceres.h>
@@ -10,6 +12,8 @@
 
 #include <opencv2/features2d.hpp>
 #include <opencv2/xfeatures2d.hpp>
+
+class Observation;
 
 class Cam
 {
@@ -31,6 +35,8 @@ public:
     static Projection str2type(std::string const& str);
 
     void setProjection(std::string const& str);
+
+    std::vector<std::shared_ptr<Observation>> observations;
 
     /**
      * @brief The "scale" is 1% or the diagonal in px
@@ -78,7 +84,7 @@ public:
             const T * const c,
             const T * const f,
             T & res_x,
-            T & res_y) {
+            T & res_y) const {
         switch (proj) {
         case Projection::rectilinear:
             res_x = pt[0]/pt[2]*f[0] + c[0];
@@ -96,6 +102,13 @@ public:
         return false;
     }
 
+    template<class T>
+    bool project(const T * const pt, T& res_x, T& res_y) const {
+        T const _c[2] = {T(c[0]), T(c[1])};
+        T const _f(f);
+        return project(pt, _c, &_f, res_x, res_y);
+    }
+
     void setIntrinsicsConstant(ceres::Problem& problem);
     void setExtrinsicsConstant(ceres::Problem& problem);
     void setConstant(ceres::Problem& problem);
@@ -108,6 +121,8 @@ public:
     cv::Vec2d getCenteredPoint(const cv::KeyPoint &pt) const;
 
     cv::Mat map2target(std::shared_ptr<Cam> target);
+
+    std::string print() const;
 
 };
 

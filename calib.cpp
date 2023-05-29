@@ -27,6 +27,7 @@ std::shared_ptr<Point3D> Calib::findOrMake(std::shared_ptr<Cam> const cam, const
     obs->pt3d = result;
     obs->pt = kp;
     obs->cam = cam;
+    cam->observations.push_back(obs);
     result->observations.push_back(obs);
     points.push_back(result);
     return result;
@@ -71,6 +72,7 @@ void Calib::computeMatches() {
                 obs->pt3d = pt;
                 obs->pt = kp2;
                 obs->cam = cams[ii];
+                obs->cam->observations.push_back(obs);
                 pt->observations.push_back(obs);
             }
         }
@@ -163,6 +165,75 @@ std::pair<double, double> Calib::computeRotationMultiple(std::shared_ptr<Cam> ca
     return best;
 }
 
+struct SimpleOrientationCost {
+    std::shared_ptr<Cam> cam_ref;
+    std::shared_ptr<Cam> cam_tgt;
+
+    cv::Point2f ref;
+    cv::Point2f tgt;
+
+    template<class T>
+    bool operator()(T const * const rot_ref, T const* const rot_tgt, T * residuals) const {
+
+        T const loc_zero[3] = {T(0),T(0),T(0)};
+
+        double const z = 1'000;
+        cv::Vec3d const unproj = cam_tgt->unproject(tgt, z);
+
+        T const cam_tgt_pt[3] = {T(unproj[0]), T(unproj[1]), T(unproj[2])};
+
+        T world_pt[3];
+        Extr::cam2world(cam_tgt_pt, loc_zero, rot_tgt, world_pt);
+
+        T cam_ref_pt[3];
+        Extr::world2cam(world_pt, loc_zero, rot_ref, cam_ref_pt);
+
+        cam_ref->project(cam_ref_pt, residuals[0], residuals[1]);
+
+        residuals[0] -= T(ref.x);
+        residuals[1] -= T(ref.y);
+
+        return true;
+    }
+
+    static ceres::CostFunction* create(
+            std::shared_ptr<Cam> cam_ref,
+            std::shared_ptr<Cam> cam_tgt,
+            cv::Point2f const& ref,
+            cv::Point2f const& tgt
+            ) {
+        return new ceres::AutoDiffCostFunction<SimpleOrientationCost, 2, 3, 3>(new SimpleOrientationCost{cam_ref, cam_tgt, ref, tgt});
+    }
+};
+
+void Calib::refineOrientationSimple(std::shared_ptr<Cam> cam_ref, std::shared_ptr<Cam> cam_tgt) {
+    ceres::Problem problem;
+
+    for (auto obs_ref : cam_ref->observations) {
+        std::shared_ptr<Observation> obs_tgt;
+        if (obs_ref->pt3d->findByCam(cam_tgt, obs_tgt)) {
+            problem.AddResidualBlock(
+                        SimpleOrientationCost::create(cam_ref, cam_tgt, obs_ref->pt.pt, obs_tgt->pt.pt),
+                        new ceres::CauchyLoss(cam_ref->scale),
+                        cam_ref->extr.rot.val,
+                        cam_tgt->extr.rot.val
+                        );
+        }
+    }
+    problem.SetParameterBlockConstant(cam_ref->extr.rot.val);
+    ceres::Solver::Options ceres_opts;
+    ceres::Solver::Summary summary;
+
+    ceres_opts.minimizer_progress_to_stdout = true;
+    ceres_opts.linear_solver_type = ceres::DENSE_QR;
+    ceres_opts.max_num_iterations = 2000;
+    //ceres_opts.num_linear_solver_threads = std::thread::hardware_concurrency();
+
+    std::cout << "###### Solving simple orientation problem ######" << std::endl;
+    ceres::Solve(ceres_opts, &problem, &summary);
+    std::cout << summary.FullReport() << std::endl;
+}
+
 void Calib::triangulateAll() {
     for (auto pt : points) {
         pt->triangulate();
@@ -191,6 +262,14 @@ void Calib::optimizeSFM() {
     std::cout << "###### Solving large SFM problem ######" << std::endl;
     ceres::Solve(ceres_opts, &problem, &summary);
     std::cout << summary.FullReport() << std::endl;
+}
+
+std::string Calib::printCams() const {
+    std::stringstream out;
+    for (size_t ii = 0; ii < cams.size(); ++ii) {
+        out << "#" << ii << ": " << cams[ii]->print() << std::endl;
+    }
+    return out.str();
 }
 
 

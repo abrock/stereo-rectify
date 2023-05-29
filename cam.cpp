@@ -126,3 +126,9 @@ cv::Mat Cam::map2target(std::shared_ptr<Cam> target) {
 
     return result;
 }
+
+std::string Cam::print() const {
+    std::stringstream out;
+    out << "f: " << f << ", size: " << size << ", extr: loc " << extr.loc << ", rot " << extr.rot;
+    return out.str();
+}

@@ -71,11 +71,15 @@ int main(int argc, char ** argv) {
     std::cout << "Match stats: " << std::endl
               << calib->matchStats() << std::endl;
 
+    std::cout << "Cams: " << std::endl << calib->printCams() << std::endl;
+
     std::pair<double, double> const rot = calib->computeRotationMultiple(calib->cams[0], calib->cams[1]);
     std::cout << "Rotation: " << rot.first << ", rmse: " << rot.second << std::endl;
 
     calib->cams[1]->extr.loc = cv::Vec3d(b, 0, 0);
     calib->cams[1]->extr.rot = cv::Vec3d(0,0,rot.first);
+
+    std::cout << "Cams: " << std::endl << calib->printCams() << std::endl;
 
     std::shared_ptr<Cam> target_cam = std::make_shared<Cam>();
     target_cam->setSize({3000, 2000});
@@ -86,7 +90,15 @@ int main(int argc, char ** argv) {
     cv::imwrite(right_img_arg.getValue() + "-simple-rot.tif", calib->cams[1]->map2target(target_cam));
     */
 
+    calib->refineOrientationSimple(calib->cams[0], calib->cams[1]);
+    std::cout << "Cams: " << std::endl << calib->printCams() << std::endl;
+
+    cv::imwrite(left_img_arg.getValue() + "-simple-orientation.tif", calib->cams[0]->map2target(target_cam));
+    cv::imwrite(right_img_arg.getValue() + "-simple-orientation.tif", calib->cams[1]->map2target(target_cam));
+
     calib->optimizeSFM();
+    std::cout << "Cams: " << std::endl << calib->printCams() << std::endl;
+
 
     cv::imwrite(left_img_arg.getValue() + "-sfm-rot.tif", calib->cams[0]->map2target(target_cam));
     cv::imwrite(right_img_arg.getValue() + "-sfm-rot.tif", calib->cams[1]->map2target(target_cam));
