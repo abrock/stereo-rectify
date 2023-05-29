@@ -62,6 +62,9 @@ double Point3D::triangulate(bool const verbose) {
     addSFMBlocks(problem);
     for (auto obs : observations) {
         obs->cam->setConstant(problem);
+        if (obs->ptInCam()[2] <= 0) {
+            return -1;
+        }
     }
     ceres::Solver::Options ceres_opts;
     ceres::Solver::Summary summary;
