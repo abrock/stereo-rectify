@@ -45,7 +45,7 @@ void Cam::setImg(const std::shared_ptr<cv::Mat> &_img) {
 }
 
 void Cam::computeKeyPoints() {
-    int const n_features = 100'000;
+    int const n_features = 20'000;
     auto detector = cv::ORB::create(n_features);
     auto matcher = cv::xfeatures2d::BEBLID::create(1.0);
     std::vector<cv::KeyPoint> pts;
