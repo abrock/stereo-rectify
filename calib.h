@@ -56,6 +56,12 @@ public:
             std::shared_ptr<Cam> cam_target
             );
 
+    static void saveStereoImages(
+            std::shared_ptr<Cam> cam_l,
+            std::shared_ptr<Cam> cam_r,
+            std::shared_ptr<Cam> cam_target
+            );
+
 };
 
 #endif // CALIB_H

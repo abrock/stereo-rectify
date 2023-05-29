@@ -115,8 +115,7 @@ int main(int argc, char ** argv) {
 
     calib->optimizeStereoDirect(cam_l, cam_r, target_cam);
     std::cout << "Cams: " << std::endl << calib->printCams() << "t: " << target_cam->print() << std::endl;
-    cv::imwrite(left_img_arg.getValue() + "-stereo-direct.tif", calib->cams[0]->map2target(target_cam));
-    cv::imwrite(right_img_arg.getValue() + "-stereo-direct.tif", calib->cams[1]->map2target(target_cam));
+    Calib::saveStereoImages(cam_l, cam_r, target_cam);
 
     return EXIT_SUCCESS;
 }

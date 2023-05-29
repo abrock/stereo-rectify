@@ -15,7 +15,7 @@ find_package(Boost COMPONENTS system filesystem iostreams REQUIRED)
 find_package(GTest REQUIRED)
 
 
-set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} " -Werror=return-type")
+set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} " -Werror=return-type -fopenmp ")
 
 add_executable(stereo-rectify
     stereo-rectify.cpp

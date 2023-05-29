@@ -3,6 +3,8 @@
 #include <map>
 
 #include <opencv2/xfeatures2d.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgproc.hpp>
 
 #include "point3d.h"
 
@@ -422,6 +424,54 @@ void Calib::optimizeStereoDirect(std::shared_ptr<Cam> cam_l, std::shared_ptr<Cam
 
     cam_r->extr.normalize();
     cam_target->extr.normalize();
+}
+
+void Calib::saveStereoImages(std::shared_ptr<Cam> cam_l, std::shared_ptr<Cam> cam_r, std::shared_ptr<Cam> cam_target) {
+
+    std::cout << "Generating maps..." << std::flush;
+    cv::Mat2f map_l = cam_l->simCamMap(cam_target);
+    cv::Mat2f map_r = cam_r->simCamMap(cam_target);
+    std::cout << "done." << std::endl;
+
+    auto clahe = cv::createCLAHE(4.0, {8,8});
+
+    cv::Mat img_orig_l_grey, img_orig_r_grey;
+    cv::cvtColor(*cam_l->img, img_orig_l_grey, cv::COLOR_BGR2GRAY);
+    cv::cvtColor(*cam_r->img, img_orig_r_grey, cv::COLOR_BGR2GRAY);
+
+    cv::Mat img_orig_ce_l_grey, img_orig_ce_r_grey;
+    clahe->apply(img_orig_l_grey, img_orig_ce_l_grey);
+    clahe->apply(img_orig_r_grey, img_orig_ce_r_grey);
+
+    cv::Mat img_l, img_r, img_l_grey, img_r_grey, img_l_ce, img_r_ce;
+    std::cout << "Remapping..." << std::flush;
+    cv::remap(*cam_l->img, img_l, map_l, cv::noArray(), cv::INTER_LANCZOS4);
+    cv::remap(*cam_r->img, img_r, map_r, cv::noArray(), cv::INTER_LANCZOS4);
+
+    cv::remap(img_orig_l_grey, img_l_grey, map_l, cv::noArray(), cv::INTER_LANCZOS4);
+    cv::remap(img_orig_r_grey, img_r_grey, map_r, cv::noArray(), cv::INTER_LANCZOS4);
+
+    cv::remap(img_orig_ce_l_grey, img_l_ce, map_l, cv::noArray(), cv::INTER_LANCZOS4);
+    cv::remap(img_orig_ce_r_grey, img_r_ce, map_r, cv::noArray(), cv::INTER_LANCZOS4);
+    std::cout << "done." << std::endl;
+
+    cv::Mat red_cyan = Misc::merge_red_cyan(img_l_grey, img_r_grey);
+    cv::Mat red_cyan_ce = Misc::merge_red_cyan(img_l_ce, img_r_ce);
+
+    std::cout << "Writing images..." << std::flush;
+#pragma omp parallel sections
+    {
+#pragma omp section
+        cv::imwrite(cam_l->fn + "-stereo-direct.tif", img_l);
+#pragma omp section
+        cv::imwrite(cam_r->fn + "-stereo-direct.tif", img_r);
+#pragma omp section
+        cv::imwrite(cam_l->fn + "-stereo-direct-red-cyan.tif", red_cyan);
+#pragma omp section
+        cv::imwrite(cam_l->fn + "-stereo-direct-red-cyan-ce.tif", red_cyan_ce);
+    }
+    std::cout << "done." << std::endl;
+
 }
 
 void Calib::optimizeSFM(std::string const& plot_prefix) {

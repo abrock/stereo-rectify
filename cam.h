@@ -130,6 +130,7 @@ public:
 
     bool validSrcPx(const cv::Point2d &src_px) const;
 
+    cv::Mat2f simCamMap(std::shared_ptr<Cam> target);
 };
 
 #endif // CAM_H

@@ -118,12 +118,12 @@ cv::Vec2d Cam::getCenteredPoint(const cv::KeyPoint &pt) const {
     return result;
 }
 
-cv::Mat Cam::map2target(std::shared_ptr<Cam> target) {
-    cv::Mat result;
+cv::Mat2f Cam::simCamMap(std::shared_ptr<Cam> target) {
     cv::Mat2f map(target->size);
 
     double const fake_loc[3] = {0,0,0};
 
+#pragma omp parallel for schedule(dynamic, 100)
     for (int yy = 0; yy < map.rows; ++yy) {
         for (int xx = 0; xx < map.cols; ++xx) {
             cv::Point target_px(xx,yy);
@@ -136,9 +136,14 @@ cv::Mat Cam::map2target(std::shared_ptr<Cam> target) {
             map(target_px) = src_px;
         }
     }
+    return map;
+}
+
+cv::Mat Cam::map2target(std::shared_ptr<Cam> target) {
+    cv::Mat result;
+    cv::Mat2f map = simCamMap(target);
 
     cv::remap(*img, result, map, cv::noArray(), cv::INTER_LANCZOS4);
-
     return result;
 }
 
