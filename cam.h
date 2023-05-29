@@ -23,9 +23,13 @@ public:
     /**
      * @brief Focal length in px
      */
-    double f;
+    double f = -1;
 
     enum class Projection {rectilinear, equidistant};
+
+    static Projection str2type(std::string const& str);
+
+    void setProjection(std::string const& str);
 
     /**
      * @brief The "scale" is 1% or the diagonal in px
@@ -38,6 +42,14 @@ public:
     double diag = -1;
 
     void setSize(cv::Size const& s);
+
+    /**
+     * @brief setFocal computes the focal length in px from a given focal length in mm and crop factor.
+     * Before calling this function setSize must have been called, either directly or by calling setImg.
+     * @param f_mm
+     * @param crop_factor
+     */
+    void setFocal(double f_mm, double const crop_factor = 1);
 
     void setImg(const std::shared_ptr<cv::Mat> &_img);
 
@@ -67,10 +79,14 @@ public:
             T & res_x,
             T & res_y);
 
+    cv::Vec3d unproject(cv::Point2d const& src_px, const double z = 1'000) const;
+
     Extr extr;
 
 
     cv::Vec2d getCenteredPoint(const cv::KeyPoint &pt) const;
+
+    cv::Mat map2target(std::shared_ptr<Cam> target);
 
 };
 

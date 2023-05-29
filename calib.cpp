@@ -139,14 +139,14 @@ std::pair<double, double> Calib::computeRotation(
     ceres::Solver::Options ceres_opts;
     ceres::Solver::Summary summary;
 
-    ceres_opts.minimizer_progress_to_stdout = true;
+    ceres_opts.minimizer_progress_to_stdout = false;
     ceres_opts.linear_solver_type = ceres::DENSE_QR;
     ceres_opts.max_num_iterations = 2000;
     //ceres_opts.num_linear_solver_threads = std::thread::hardware_concurrency();
 
-    std::cout << "###### Solving problem ######" << std::endl;
+    //std::cout << "###### Solving problem ######" << std::endl;
     ceres::Solve(ceres_opts, &problem, &summary);
-    std::cout << summary.FullReport() << std::endl;
+    //std::cout << summary.FullReport() << std::endl;
     result = Misc::pos_fmod(result, 2*M_PI);
     return {result, summary.final_cost / problem.NumResidualBlocks()};
 }
@@ -156,7 +156,7 @@ std::pair<double, double> Calib::computeRotationMultiple(std::shared_ptr<Cam> ca
     double const num_tries = 25;
     for (size_t ii = 1; ii < num_tries; ++ii) {
         std::pair<double, double> candidate = computeRotation(cam1, cam2, double(ii)*2.0*M_PI / num_tries);
-        if (candidate.second < best.second) {
+        if (candidate.second < best.second && candidate.second >= 0) {
             best = candidate;
         }
     }

@@ -24,6 +24,11 @@ int main(int argc, char ** argv) {
     TCLAP::ValueArg<std::string> proj_arg("p", "projection", "Projection type, either rectilinear or equidistant", false, "rectilinear",
                                           "Projection type, either rectilinear or equidistant", cmd);
 
+    TCLAP::ValueArg<std::string> proj_right_arg("", "projection-right",
+                                                "Projection type of the right camera, either rectilinear or equidistant. Default is the projection type of the left camera",
+                                                false, "rectilinear",
+                                                "Projection type, either rectilinear or equidistant", cmd);
+
 
     cmd.parse(argc, argv);
 
@@ -47,9 +52,13 @@ int main(int argc, char ** argv) {
 
     std::shared_ptr<Cam> cam_l = std::make_shared<Cam>();
     cam_l->setImg(left);
+    cam_l->setFocal(f);
+    cam_l->setProjection(proj_arg.getValue());
 
     std::shared_ptr<Cam> cam_r = std::make_shared<Cam>();
     cam_r->setImg(right);
+    cam_r->setFocal(f_r);
+    cam_r->setProjection(proj_right_arg.isSet() ? proj_right_arg.getValue() : proj_arg.getValue());
 
     std::shared_ptr<Calib> calib = std::make_shared<Calib>();
 
@@ -63,7 +72,18 @@ int main(int argc, char ** argv) {
               << calib->matchStats() << std::endl;
 
     std::pair<double, double> const rot = calib->computeRotationMultiple(calib->cams[0], calib->cams[1]);
-    std::cout << "Rotation: " << rot.first << std::endl;
+    std::cout << "Rotation: " << rot.first << ", rmse: " << rot.second << std::endl;
+
+    calib->cams[1]->extr.loc = cv::Vec3d(b, 0, 0);
+    calib->cams[1]->extr.rot = cv::Vec3d(0,0,rot.first);
+
+    std::shared_ptr<Cam> target_cam = std::make_shared<Cam>();
+    target_cam->setSize({3000, 2000});
+    target_cam->setFocal(4);
+
+    cv::imwrite(left_img_arg.getValue() + "-simple-rot.tif", calib->cams[0]->map2target(target_cam));
+
+    cv::imwrite(right_img_arg.getValue() + "-simple-rot.tif", calib->cams[1]->map2target(target_cam));
 
     return EXIT_SUCCESS;
 }
