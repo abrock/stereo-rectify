@@ -33,7 +33,7 @@ double Point3D::triangulateRANSAC(bool const verbose) {
     std::mt19937_64 engine{std::random_device()()};
     cv::Vec3d best_result = loc;
     double best_error = max_error;
-    for (size_t ii = 0; ii < 50; ++ii) {
+    for (size_t ii = 0; ii < 20; ++ii) {
         double const z = std::uniform_real_distribution<double>(100, 3'000)(engine);
         double const x = std::uniform_real_distribution<double>(-z, z)(engine);
         double const y = std::uniform_real_distribution<double>(-z, z)(engine);
