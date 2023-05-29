@@ -84,8 +84,11 @@ int main(int argc, char ** argv) {
     std::cout << "Cams: " << std::endl << calib->printCams() << std::endl;
 
     std::shared_ptr<Cam> target_cam = std::make_shared<Cam>();
-    target_cam->setSize({3000, 2000});
+    target_cam->setSize(cam_l->size);
     target_cam->setFocal(4);
+    if (cam_l->proj == Cam::Projection::rectilinear) {
+        target_cam->setFocal(f);
+    }
 
     /*
     cv::imwrite(left_img_arg.getValue() + "-simple-rot.tif", calib->cams[0]->map2target(target_cam));
