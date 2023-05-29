@@ -336,12 +336,10 @@ struct StereoDirectCost {
         // Epipolar lines should be on the y axis.
         residuals[0] = pt2d_tgt_l[1] - pt2d_tgt_r[1];
 
-        residuals[1] = T(0);
-
         T x_weight(.01);
         // Points in the right camera should be further left than in the left camera.
         if (pt2d_tgt_r[0] > pt2d_tgt_l[0]) {
-            x_weight = T(1);
+            x_weight *= T(10);
         }
         residuals[1] = x_weight*(pt2d_tgt_l[0] - pt2d_tgt_r[0]);
 
@@ -468,7 +466,11 @@ void Calib::saveStereoImages(std::shared_ptr<Cam> cam_l, std::shared_ptr<Cam> ca
 #pragma omp section
         cv::imwrite(cam_l->fn + "-stereo-direct-red-cyan.tif", red_cyan);
 #pragma omp section
+        cv::imwrite(cam_l->fn + "-stereo-direct-red-cyan.jpg", red_cyan, {cv::IMWRITE_JPEG_QUALITY, 95});
+#pragma omp section
         cv::imwrite(cam_l->fn + "-stereo-direct-red-cyan-ce.tif", red_cyan_ce);
+#pragma omp section
+        cv::imwrite(cam_l->fn + "-stereo-direct-red-cyan-ce.jpg", red_cyan_ce, {cv::IMWRITE_JPEG_QUALITY, 95});
     }
     std::cout << "done." << std::endl;
 
