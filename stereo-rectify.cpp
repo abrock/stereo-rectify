@@ -115,7 +115,16 @@ int main(int argc, char ** argv) {
 
     calib->optimizeStereoDirect(cam_l, cam_r, target_cam);
     std::cout << "Cams: " << std::endl << calib->printCams() << "t: " << target_cam->print() << std::endl;
-    Calib::saveStereoImages(cam_l, cam_r, target_cam);
+    Calib::saveStereoImages(cam_l, cam_r, target_cam, target_cam, "single-target");
+
+    std::shared_ptr<Cam> cam_target_l = std::make_shared<Cam>();
+    std::shared_ptr<Cam> cam_target_r = std::make_shared<Cam>();
+    *cam_target_l = *target_cam;
+    *cam_target_r = *target_cam;
+    calib->optimizeStereoDirect2Cams(cam_l, cam_r, cam_target_l, cam_target_r);
+    std::cout << "Cams: " << std::endl << calib->printCams()
+              << "tl: " << cam_target_l->print() << std::endl << "tl: " << cam_target_r->print() << std::endl;
+    Calib::saveStereoImages(cam_l, cam_r, cam_target_l, cam_target_r, "two-targets");
 
     return EXIT_SUCCESS;
 }

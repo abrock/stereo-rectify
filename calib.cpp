@@ -424,11 +424,142 @@ void Calib::optimizeStereoDirect(std::shared_ptr<Cam> cam_l, std::shared_ptr<Cam
     cam_target->extr.normalize();
 }
 
-void Calib::saveStereoImages(std::shared_ptr<Cam> cam_l, std::shared_ptr<Cam> cam_r, std::shared_ptr<Cam> cam_target) {
+struct StereoDirectCost2Cams {
+    std::shared_ptr<Cam> cam_l;
+    std::shared_ptr<Cam> cam_r;
+    std::shared_ptr<Cam> cam_target;
+
+    cv::Vec3d _pt_world_l;
+    cv::Vec3d _pt_cam_r;
+
+    StereoDirectCost2Cams(
+            std::shared_ptr<Cam> _cam_l,
+            std::shared_ptr<Cam> _cam_r,
+            std::shared_ptr<Cam> _cam_target,
+
+            cv::Point2d _pt_l,
+            cv::Point2d _pt_r
+            ) : cam_l(_cam_l), cam_r(_cam_r), cam_target(_cam_target)
+    {
+        // left cam is assumed to have zero extrinsics, therefore the world point is simply the cam point
+        _pt_world_l = _cam_l->unproject(_pt_l);
+        _pt_cam_r = _cam_r->unproject(_pt_r);
+    }
+
+    template<class T>
+    bool operator()(T const * const rot_r, T const * const rot_target_l, T const * const rot_target_r, T * residuals) const {
+        bool success = true;
+        T const zero[3] = {T(0), T(0), T(0)};
+        T const pt_world_l[3] = {T(_pt_world_l[0]), T(_pt_world_l[1]), T(_pt_world_l[2])};
+        T const pt_cam_r[3] =   {  T(_pt_cam_r[0]),   T(_pt_cam_r[1]),   T(_pt_cam_r[2])};
+        T pt_world_r[3];
+        Extr::cam2world(pt_cam_r, zero, rot_r, pt_world_r);
+
+        T pt_tgt_r[3];
+        Extr::world2cam(pt_world_r, zero, rot_target_r, pt_tgt_r);
+
+        T pt_tgt_l[3];
+        Extr::world2cam(pt_world_l, zero, rot_target_l, pt_tgt_l);
+
+        T pt2d_tgt_l[2];
+        success &= cam_target->project(pt_tgt_l, pt2d_tgt_l[0], pt2d_tgt_l[1]);
+
+        T pt2d_tgt_r[2];
+        success &= cam_target->project(pt_tgt_r, pt2d_tgt_r[0], pt2d_tgt_r[1]);
+
+        // Epipolar lines should be on the y axis.
+        residuals[0] = pt2d_tgt_l[1] - pt2d_tgt_r[1];
+
+        T x_weight(.01);
+        // Points in the right camera should be further left than in the left camera.
+        if (pt2d_tgt_r[0] > pt2d_tgt_l[0]) {
+            x_weight *= T(10);
+        }
+        residuals[1] = x_weight*(pt2d_tgt_l[0] - pt2d_tgt_r[0]);
+
+        return success;
+    }
+
+    static ceres::CostFunction* create(
+            std::shared_ptr<Cam> _cam_l,
+            std::shared_ptr<Cam> _cam_r,
+            std::shared_ptr<Cam> _cam_target,
+
+            cv::Point2d _pt_l,
+            cv::Point2d _pt_r
+            ) {
+        return new ceres::AutoDiffCostFunction<StereoDirectCost2Cams, 2, 3, 3, 3>(
+                    new StereoDirectCost2Cams(_cam_l, _cam_r, _cam_target, _pt_l, _pt_r)
+                    );
+    }
+};
+
+void Calib::optimizeStereoDirect2Cams(
+        std::shared_ptr<Cam> cam_l,
+        std::shared_ptr<Cam> cam_r,
+        std::shared_ptr<Cam> cam_target_l,
+        std::shared_ptr<Cam> cam_target_r
+        ) {
+    cam_l->extr.loc = cam_l->extr.rot
+            = cam_target_l->extr.loc = cam_target_l->extr.rot
+            = cam_target_r->extr.loc = cam_target_r->extr.rot = cv::Vec3d(0,0,0);
+
+    ceres::Problem problem;
+    for (auto obs_l : cam_l->observations) {
+        std::shared_ptr<Observation> obs_r;
+        if (obs_l->pt3d->findByCam(cam_r, obs_r)) {
+            problem.AddResidualBlock(
+                        StereoDirectCost2Cams::create(cam_l, cam_r, cam_target_l, obs_l->pt.pt, obs_r->pt.pt),
+                        new ceres::CauchyLoss(cam_l->scale),
+                        cam_r->extr.rot.val,
+                        cam_target_l->extr.rot.val,
+                        cam_target_r->extr.rot.val
+                        );
+        }
+    }
+    double const rotate_cost = 10*problem.NumResidualBlocks();
+    problem.AddResidualBlock(
+                RotatePitchYawCost::create(rotate_cost),
+                nullptr,
+                cam_r->extr.rot.val);
+    problem.AddResidualBlock(
+                RotatePitchYawCost::create(rotate_cost),
+                nullptr,
+                cam_target_l->extr.rot.val);
+    problem.AddResidualBlock(
+                RotatePitchYawCost::create(rotate_cost),
+                nullptr,
+                cam_target_r->extr.rot.val);
+
+    ceres::Solver::Options ceres_opts;
+    ceres::Solver::Summary summary;
+
+    ceres_opts.minimizer_progress_to_stdout = true;
+    ceres_opts.linear_solver_type = ceres::DENSE_QR;
+    ceres_opts.max_num_iterations = 2000;
+    //ceres_opts.num_linear_solver_threads = std::thread::hardware_concurrency();
+
+    std::cout << "###### Solving Calib::optimizeStereoDirect problem ######" << std::endl;
+    ceres::Solve(ceres_opts, &problem, &summary);
+    std::cout << summary.FullReport() << std::endl << summary.BriefReport() << std::endl;
+
+    cam_r->extr.normalize();
+    cam_target_l->extr.normalize();
+    cam_target_r->extr.normalize();
+}
+
+
+void Calib::saveStereoImages(
+        std::shared_ptr<Cam> cam_l,
+        std::shared_ptr<Cam> cam_r,
+        std::shared_ptr<Cam> cam_target_l,
+        std::shared_ptr<Cam> cam_target_r,
+        std::string const& suffix
+        ) {
 
     std::cout << "Generating maps..." << std::flush;
-    cv::Mat2f map_l = cam_l->simCamMap(cam_target);
-    cv::Mat2f map_r = cam_r->simCamMap(cam_target);
+    cv::Mat2f map_l = cam_l->simCamMap(cam_target_l);
+    cv::Mat2f map_r = cam_r->simCamMap(cam_target_r);
     std::cout << "done." << std::endl;
 
     auto clahe = cv::createCLAHE(4.0, {8,8});
@@ -460,17 +591,17 @@ void Calib::saveStereoImages(std::shared_ptr<Cam> cam_l, std::shared_ptr<Cam> ca
 #pragma omp parallel sections
     {
 #pragma omp section
-        cv::imwrite(cam_l->fn + "-stereo-direct.tif", img_l);
+        cv::imwrite(cam_l->fn + "-" + suffix + "-stereo-direct.tif", img_l);
 #pragma omp section
-        cv::imwrite(cam_r->fn + "-stereo-direct.tif", img_r);
+        cv::imwrite(cam_r->fn + "-" + suffix + "-stereo-direct.tif", img_r);
 #pragma omp section
-        cv::imwrite(cam_l->fn + "-stereo-direct-red-cyan.tif", red_cyan);
+        cv::imwrite(cam_l->fn + "-" + suffix + "-stereo-direct-red-cyan.tif", red_cyan);
 #pragma omp section
-        cv::imwrite(cam_l->fn + "-stereo-direct-red-cyan.jpg", red_cyan, {cv::IMWRITE_JPEG_QUALITY, 95});
+        cv::imwrite(cam_l->fn + "-" + suffix + "-stereo-direct-red-cyan.jpg", red_cyan, {cv::IMWRITE_JPEG_QUALITY, 95});
 #pragma omp section
-        cv::imwrite(cam_l->fn + "-stereo-direct-red-cyan-ce.tif", red_cyan_ce);
+        cv::imwrite(cam_l->fn + "-" + suffix + "-stereo-direct-red-cyan-ce.tif", red_cyan_ce);
 #pragma omp section
-        cv::imwrite(cam_l->fn + "-stereo-direct-red-cyan-ce.jpg", red_cyan_ce, {cv::IMWRITE_JPEG_QUALITY, 95});
+        cv::imwrite(cam_l->fn + "-" + suffix + "-stereo-direct-red-cyan-ce.jpg", red_cyan_ce, {cv::IMWRITE_JPEG_QUALITY, 95});
     }
     std::cout << "done." << std::endl;
 
