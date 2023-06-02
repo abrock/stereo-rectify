@@ -1,6 +1,7 @@
 #ifndef CAM_H
 #define CAM_H
 
+#include <QObject>
 #include <vector>
 
 #include <opencv2/core.hpp>
@@ -15,8 +16,9 @@
 
 class Observation;
 
-class Cam
+class Cam : public QObject
 {
+    Q_OBJECT
 public:
     Cam();
 
@@ -30,11 +32,20 @@ public:
      */
     double f = -1;
 
+    double f_mm = -1;
+    double crop_factor = 1;
+
+    std::string name;
+
     enum class Projection {rectilinear, equidistant};
 
     static Projection str2type(std::string const& str);
 
+    static std::string type2str(Projection const type);
+
     void setProjection(std::string const& str);
+
+    Q_INVOKABLE void setProjection(QString const& str);
 
     std::vector<std::shared_ptr<Observation>> observations;
 
@@ -58,7 +69,9 @@ public:
      * @param f_mm
      * @param crop_factor
      */
-    void setFocal(double f_mm, double const crop_factor = 1);
+    void setFocal(const double _f_mm, double const _crop_factor = 1);
+
+    Q_INVOKABLE void setFocal(QString const& str);
 
     void setImg(const std::shared_ptr<cv::Mat> &_img);
 

@@ -35,11 +35,6 @@ std::shared_ptr<Point3D> Calib::findOrMake(std::shared_ptr<Cam> const cam, const
     return result;
 }
 
-Calib::Calib()
-{
-
-}
-
 void Calib::computeMatches() {
     for (auto& cam : cams) {
         cam->computeKeyPoints();

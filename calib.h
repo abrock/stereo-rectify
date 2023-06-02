@@ -1,6 +1,8 @@
 #ifndef CALIB_H
 #define CALIB_H
 
+#include <QObject>
+
 #include <vector>
 
 #include "cam.h"
@@ -9,10 +11,13 @@
 #include <runningstats/runningstats.h>
 namespace rs = runningstats;
 
-class Calib {
+class Calib : public QObject {
+    Q_OBJECT
+
+private:
     std::shared_ptr<Point3D> findOrMake(const std::shared_ptr<Cam> cam, int const idx, const cv::KeyPoint &kp);
+
 public:
-    Calib();
 
     std::vector<std::shared_ptr<Cam> > cams;
 

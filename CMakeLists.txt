@@ -14,11 +14,18 @@ find_package(Boost COMPONENTS system filesystem iostreams REQUIRED)
 
 find_package(GTest REQUIRED)
 
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
+
+find_package(QT NAMES Qt6 Qt5 COMPONENTS Core Quick REQUIRED)
+find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core Quick REQUIRED)
 
 set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} " -Werror=return-type -fopenmp ")
 
 add_executable(stereo-rectify
     stereo-rectify.cpp
+    qml.qrc
     calib.cpp
     cam.cpp
     extr.cpp
@@ -32,6 +39,12 @@ target_link_libraries(stereo-rectify
     ${RUNNINGSTATS_LIBRARIES}
     )
 
+target_compile_definitions(stereo-rectify
+  PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
+
+target_link_libraries(stereo-rectify
+  PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Quick)
+
 add_executable(test
     tests.cpp
     calib.cpp
@@ -41,9 +54,15 @@ add_executable(test
     point3d.cpp
     )
 
+target_compile_definitions(test
+  PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
+
 target_link_libraries(test
     ceres
     GTest::gtest
     ${OpenCV_LIBRARIES}
     ${RUNNINGSTATS_LIBRARIES}
     )
+
+target_link_libraries(test
+  PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Quick)

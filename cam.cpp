@@ -17,11 +17,28 @@ Cam::Projection Cam::str2type(const std::string &str) {
     if ("equidistant" == str) {
         return Projection::equidistant;
     }
-    throw std::runtime_error("Unknown projection type " + str);
+    throw std::runtime_error("Unknown projection type: \"" + str + "\"");
+}
+
+std::string Cam::type2str(const Cam::Projection type) {
+    switch (type) {
+    case Projection::rectilinear: return "rectilinear";
+    case Projection::equidistant: return "equidistant";
+    }
+    throw std::runtime_error("Projection type conversion to string not implemented for the given type");
 }
 
 void Cam::setProjection(const std::string &str) {
     proj = str2type(str);
+}
+
+void Cam::setProjection(const QString &str) {
+    try {
+        setProjection(str.toLower().toStdString());
+        std::cout << "Projection type: " << type2str(proj) << ", cam: " << name << std::endl;
+    }  catch (std::exception const& e) {
+        std::cout << "Unable to set projection: " << std::endl << e.what() << std::endl;
+    }
 }
 
 void Cam::setSize(const cv::Size &s) {
@@ -32,11 +49,17 @@ void Cam::setSize(const cv::Size &s) {
     c[1] = double(s.height-1)/2;
 }
 
-void Cam::setFocal(double f_mm, const double crop_factor) {
-    f_mm *= crop_factor; // Do computations as if we had a small frame sensor
+void Cam::setFocal(const double _f_mm, const double _crop_factor) {
     CHECK_GT(diag, 0);
     double const diag_mm = std::sqrt(36*36 + 24*24);
-    f = f_mm * diag / diag_mm;
+    f_mm = _f_mm;
+    crop_factor = _crop_factor;
+    f = f_mm * crop_factor * diag / diag_mm;
+}
+
+void Cam::setFocal(const QString &str) {
+    setFocal(str.toDouble(), crop_factor);
+    std::cout << "New focal length: " << f_mm << " for " << name << std::endl;
 }
 
 void Cam::setImg(const std::shared_ptr<cv::Mat> &_img) {
