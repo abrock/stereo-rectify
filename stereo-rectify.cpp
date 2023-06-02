@@ -123,7 +123,8 @@ int main(int argc, char ** argv) {
     *cam_target_r = *target_cam;
     calib->optimizeStereoDirect2Cams(cam_l, cam_r, cam_target_l, cam_target_r);
     std::cout << "Cams: " << std::endl << calib->printCams()
-              << "tl: " << cam_target_l->print() << std::endl << "tl: " << cam_target_r->print() << std::endl;
+              << "tl: " << cam_target_l->print() << std::endl
+              << "tr: " << cam_target_r->print() << std::endl;
     Calib::saveStereoImages(cam_l, cam_r, cam_target_l, cam_target_r, "two-targets");
 
     return EXIT_SUCCESS;
