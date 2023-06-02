@@ -543,7 +543,6 @@ void Calib::optimizeStereoDirect2Cams(
     cam_target_r->extr.normalize();
 }
 
-
 void Calib::saveStereoImages(
         std::shared_ptr<Cam> cam_l,
         std::shared_ptr<Cam> cam_r,

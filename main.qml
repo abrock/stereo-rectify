@@ -1,6 +1,6 @@
 import QtQuick 2.15
 import QtQuick.Window 2.15
-import QtQuick.Controls 1.4
+import QtQuick.Controls 2.15
 import QtQuick.Layouts 1.12
 
 
@@ -22,10 +22,12 @@ Window {
             TextField {
                 text: "24"
                 onEditingFinished: cam_l.setFocal(text);
+                Component.onCompleted: cam_l.setFocal(text);
             }
             TextField {
                 text: "24"
                 onEditingFinished: cam_r.setFocal(text);
+                Component.onCompleted: cam_r.setFocal(text);
             }
         }
         RowLayout {
@@ -37,11 +39,13 @@ Window {
                 width: 800
                 model: [ "Rectilinear", "Equidistant" ]
                 onCurrentIndexChanged: cam_l.setProjection(currentText)
+                Component.onCompleted: cam_l.setProjection(currentText)
             }
             ComboBox {
                 width: 400
                 model: [ "Rectilinear", "Equidistant" ]
                 onCurrentIndexChanged: cam_r.setProjection(currentText)
+                Component.onCompleted: cam_r.setProjection(currentText)
             }
         }
         RowLayout {
@@ -52,8 +56,13 @@ Window {
             }
             ComboBox {
                 width: 400
-                model: [ "simple", "1cam", "2cam" ]
-                onCurrentIndexChanged: cam_r.setProjection(currentText)
+                model: [ "simple", "1-cam", "2-cam" ]
+                onCurrentIndexChanged: manager.setMethod(currentText)
+                Component.onCompleted: manager.setMethod(currentText)
+            }
+            Button {
+                text: "Run"
+                onClicked: manager.run();
             }
         }
     }

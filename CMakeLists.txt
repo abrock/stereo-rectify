@@ -18,8 +18,14 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
+find_package(Qt5Widgets CONFIG REQUIRED)
+find_package(Qt5Quick CONFIG REQUIRED)
+find_package(Qt5Core CONFIG REQUIRED)
+
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Core Quick REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core Quick REQUIRED)
+
+include_directories(${Qt5Widgets_INCLUDE_DIRS})
 
 set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} " -Werror=return-type -fopenmp ")
 
@@ -31,10 +37,12 @@ add_executable(stereo-rectify
     extr.cpp
     misc.cpp
     point3d.cpp
+    stereomanager.cpp
     )
 
 target_link_libraries(stereo-rectify
     ceres
+    Qt5::Widgets
     ${OpenCV_LIBRARIES}
     ${RUNNINGSTATS_LIBRARIES}
     )
