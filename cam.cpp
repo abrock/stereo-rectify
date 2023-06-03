@@ -127,8 +127,7 @@ cv::Vec3d Cam::unproject(const cv::Point2d &src_px, double const z) const {
     case Projection::equidistant:
         result[0] = (src_px.x - c[0]) / f;
         result[1] = (src_px.y - c[1]) / f;
-        double const r = cv::norm(result);
-        CHECK_LT(r, M_PI_2);
+        double const r = std::min(cv::norm(result), M_PI_2 - 1e-6);
         double const factor = std::tan(r)/r;
         result *= factor * z;
         break;
