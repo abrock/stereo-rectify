@@ -45,6 +45,7 @@ target_link_libraries(stereo-rectify
     Qt5::Widgets
     ${OpenCV_LIBRARIES}
     ${RUNNINGSTATS_LIBRARIES}
+    ParallelTime
     )
 
 target_compile_definitions(stereo-rectify
