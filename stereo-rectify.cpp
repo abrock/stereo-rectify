@@ -151,6 +151,9 @@ int main(int argc, char ** argv) {
     }
 
     QApplication app(argc, argv);
+    app.setOrganizationName("example");
+    app.setOrganizationDomain("example.org");
+    app.setApplicationName("Stereo Rectifier");
 
     QQmlApplicationEngine engine;
     const QUrl url(QStringLiteral("qrc:/main.qml"));
