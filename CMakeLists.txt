@@ -27,7 +27,9 @@ find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Core Quick REQUIRED)
 
 include_directories(${Qt5Widgets_INCLUDE_DIRS})
 
-set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} " -Werror=return-type -fopenmp ")
+find_package(fmt REQUIRED)
+
+set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} " -fopenmp -Wall -fstack-protector-strong -fext-numeric-literals -Werror=shadow -Werror=format -Werror=missing-field-initializers -Werror=return-type -Werror=array-bounds -Werror=sizeof-pointer-div -Werror=sign-compare")
 
 add_executable(stereo-rectify
     stereo-rectify.cpp
@@ -40,19 +42,6 @@ add_executable(stereo-rectify
     stereomanager.cpp
     )
 
-target_link_libraries(stereo-rectify
-    ceres
-    Qt5::Widgets
-    ${OpenCV_LIBRARIES}
-    ${RUNNINGSTATS_LIBRARIES}
-    ParallelTime
-    )
-
-target_compile_definitions(stereo-rectify
-  PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
-
-target_link_libraries(stereo-rectify
-  PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Quick)
 
 add_executable(test
     tests.cpp
@@ -63,15 +52,27 @@ add_executable(test
     point3d.cpp
     )
 
-target_compile_definitions(test
-  PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
+foreach(target
+        stereo-rectify
+        test
+        )
+    target_link_libraries(${target}
+        ceres
+        Qt5::Widgets
+        ${OpenCV_LIBRARIES}
+        ${RUNNINGSTATS_LIBRARIES}
+        ParallelTime
+        fmt::fmt
+        )
+
+    target_compile_definitions(stereo-rectify
+      PRIVATE $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:QT_QML_DEBUG>)
+
+    target_link_libraries(stereo-rectify
+      PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Quick)
+
+endforeach()
 
 target_link_libraries(test
-    ceres
     GTest::gtest
-    ${OpenCV_LIBRARIES}
-    ${RUNNINGSTATS_LIBRARIES}
     )
-
-target_link_libraries(test
-  PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Quick)

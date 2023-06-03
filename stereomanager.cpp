@@ -7,6 +7,8 @@
 
 #include <ParallelTime/paralleltime.h>
 
+#include <fmt/core.h>
+
 StereoManager::Method StereoManager::str2method(std::string str) {
     str = Misc::to_lower(str);
     if ("simple" == str) {
@@ -28,6 +30,21 @@ void StereoManager::setMethod(const QString &str) {
     }  catch (std::exception const& e) {
         std::cout << "Setting optimization method failed: " << std::endl << e.what() << std::endl;
     }
+}
+
+void StereoManager::setPreview(const QString &str) {
+    preview = str.toLower().toStdString();
+}
+
+void StereoManager::setCLAHE(const bool checked, const QString &_clip_limit, const QString &_grid_size) {
+    use_clahe = checked;
+    clahe_clip_limit = _clip_limit.toDouble();
+    clahe_grid_size = _grid_size.toDouble();
+    if (clahe_grid_size < 1) {
+        std::cerr << "Warning: grid size < 1 makes no sense, setting it to 1" << std::endl;
+        clahe_grid_size = 1;
+    }
+    fmt::print("New CLAHE settings: {}abled, clip limit: {:.3f}, grid size: {}\n", use_clahe ? "en" : "dis", clahe_clip_limit, clahe_grid_size);
 }
 
 void StereoManager::optimize() {
@@ -57,13 +74,16 @@ void StereoManager::optimize() {
 }
 
 void StereoManager::run() {
-    std::string const name_red_cyan = "red-cyan";
-    std::string const name_red_cyan_ce = "red-cyan, contrast enhanced";
+    std::string const img_name = "preview";
     static cv::Mat empty(cam_target_l->size, CV_8UC1, cv::Scalar(0,0,0));
-    cv::imshow(name_red_cyan, empty);
-    cv::imshow(name_red_cyan_ce, empty);
+    cv::imshow(img_name, empty);
     cv::waitKey(1);
     optimize();
+
+    if ("left" == preview || "right" == preview) {
+        std::shared_ptr<Cam> cam = "left" == preview ? cam_l : cam_r;
+        return;
+    }
 
     std::cout << "Left cam:  " << cam_l->print() << std::endl;
     std::cout << "Right cam: " << cam_r->print() << std::endl;
@@ -104,7 +124,6 @@ void StereoManager::run() {
     cv::Mat red_cyan_ce = Misc::merge_red_cyan(img_l_ce, img_r_ce);
     std::cout << "Merging: " << t.print() << std::endl;
 
-    cv::imshow(name_red_cyan, red_cyan);
-    cv::imshow(name_red_cyan_ce, red_cyan_ce);
+    cv::imshow(img_name, red_cyan);
     cv::waitKey(1);
 }

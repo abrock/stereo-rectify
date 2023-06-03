@@ -22,6 +22,12 @@ Window {
         property int cam_r_proj: 0
 
         property int method: 0
+
+        property int preview_type: 0
+
+        property bool enhance_contrast: false
+        property string ce_clip_limit: "4.0"
+        property string ce_grid_size: "8"
     }
 
     ColumnLayout {
@@ -29,7 +35,7 @@ Window {
         RowLayout {
             width: parent.width
             Text {
-                width: 12
+                width: 120
                 text: "Input focal length"
             }
             TextField {
@@ -91,6 +97,65 @@ Window {
                 }
                 Component.onCompleted: manager.setMethod(currentText)
             }
+        }
+        RowLayout {
+            width: parent.width
+            Text {
+                width: 12
+                text: "Preview"
+            }
+            ComboBox {
+                width: 400
+                model: [ "red-cyan", "left", "right", "side-by-side" ]
+                currentIndex: settings.preview_type
+                onCurrentValueChanged: {
+                    manager.setPreview(currentText)
+                    settings.preview_type = currentIndex
+                }
+                Component.onCompleted: manager.setPreview(currentText)
+            }
+        }
+        RowLayout {
+            width: parent.width
+            Button {
+                text: "Enhance contrast (CLAHE)"
+                checkable: true
+                checked: settings.enhance_contrast
+                id: enhance_contrast
+                onClicked: {
+                    settings.enhance_contrast = checked
+                    manager.setCLAHE(enhance_contrast.checked, ce_clip_limit.text, ce_grid_size.text)
+                }
+                Component.onCompleted: manager.setCLAHE(enhance_contrast.checked, ce_clip_limit.text, ce_grid_size.text)
+            }
+            Text {
+                width: 120
+                text: "Clip limit"
+            }
+            TextField {
+                text: settings.ce_clip_limit
+                id: ce_clip_limit
+                onEditingFinished: {
+                    settings.ce_clip_limit = text
+                    manager.setCLAHE(enhance_contrast.checked, ce_clip_limit.text, ce_grid_size.text)
+                }
+                Component.onCompleted: manager.setCLAHE(enhance_contrast.checked, ce_clip_limit.text, ce_grid_size.text)
+            }
+            Text {
+                width: 120
+                text: "Grid size"
+            }
+            TextField {
+                text: settings.ce_grid_size
+                id: ce_grid_size
+                onEditingFinished: {
+                    settings.ce_grid_size = text
+                    manager.setCLAHE(enhance_contrast.checked, ce_clip_limit.text, ce_grid_size.text)
+                }
+                Component.onCompleted: manager.setCLAHE(enhance_contrast.checked, ce_clip_limit.text, ce_grid_size.text)
+            }
+        }
+        RowLayout {
             Button {
                 text: "Run"
                 onClicked: manager.run();

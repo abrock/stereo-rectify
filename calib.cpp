@@ -313,19 +313,19 @@ struct StereoDirectCost {
         T const zero[3] = {T(0), T(0), T(0)};
         T const pt_world_l[3] = {T(_pt_world_l[0]), T(_pt_world_l[1]), T(_pt_world_l[2])};
         T const pt_cam_r[3] =   {  T(_pt_cam_r[0]),   T(_pt_cam_r[1]),   T(_pt_cam_r[2])};
-        T pt_world_r[3];
+        T pt_world_r[3] = {T(0), T(0), T(0)};
         Extr::cam2world(pt_cam_r, zero, rot_r, pt_world_r);
 
-        T pt_tgt_r[3];
+        T pt_tgt_r[3] = {T(0), T(0), T(0)};
         Extr::world2cam(pt_world_r, zero, rot_target, pt_tgt_r);
 
-        T pt_tgt_l[3];
+        T pt_tgt_l[3] = {T(0), T(0), T(0)};
         Extr::world2cam(pt_world_l, zero, rot_target, pt_tgt_l);
 
-        T pt2d_tgt_l[2];
+        T pt2d_tgt_l[2] = {T(0), T(0)};
         success &= cam_target->project(pt_tgt_l, pt2d_tgt_l[0], pt2d_tgt_l[1]);
 
-        T pt2d_tgt_r[2];
+        T pt2d_tgt_r[2] = {T(0), T(0)};
         success &= cam_target->project(pt_tgt_r, pt2d_tgt_r[0], pt2d_tgt_r[1]);
 
         // Epipolar lines should be on the y axis.
@@ -367,7 +367,7 @@ struct RotatePitchYawCost {
     bool operator()(T const * const rot, T * residuals) const {
         T const src[3] = {T(0), T(0), T(weight)};
         ceres::AngleAxisRotatePoint(rot, src, residuals);
-        residuals[2] -= src[3];
+        residuals[2] -= src[2];
         return true;
     }
 
@@ -447,19 +447,19 @@ struct StereoDirectCost2Cams {
         T const zero[3] = {T(0), T(0), T(0)};
         T const pt_world_l[3] = {T(_pt_world_l[0]), T(_pt_world_l[1]), T(_pt_world_l[2])};
         T const pt_cam_r[3] =   {  T(_pt_cam_r[0]),   T(_pt_cam_r[1]),   T(_pt_cam_r[2])};
-        T pt_world_r[3];
+        T pt_world_r[3] = {T(0), T(0), T(0)};
         Extr::cam2world(pt_cam_r, zero, rot_r, pt_world_r);
 
-        T pt_tgt_r[3];
+        T pt_tgt_r[3] = {T(0), T(0), T(0)};
         Extr::world2cam(pt_world_r, zero, rot_target_r, pt_tgt_r);
 
         T pt_tgt_l[3];
         Extr::world2cam(pt_world_l, zero, rot_target_l, pt_tgt_l);
 
-        T pt2d_tgt_l[2];
+        T pt2d_tgt_l[2] = {T(0), T(0)};
         success &= cam_target->project(pt_tgt_l, pt2d_tgt_l[0], pt2d_tgt_l[1]);
 
-        T pt2d_tgt_r[2];
+        T pt2d_tgt_r[2] = {T(0), T(0)};
         success &= cam_target->project(pt_tgt_r, pt2d_tgt_r[0], pt2d_tgt_r[1]);
 
         // Epipolar lines should be on the y axis.

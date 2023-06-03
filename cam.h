@@ -96,22 +96,22 @@ public:
     template<class T>
     bool project(
             const T * const pt,
-            const T * const c,
-            const T * const f,
+            const T * const _c,
+            const T * const _f,
             T & res_x,
             T & res_y) const {
         switch (proj) {
         case Projection::rectilinear:
-            res_x = pt[0]/pt[2]*f[0] + c[0];
-            res_y = pt[1]/pt[2]*f[0] + c[1];
+            res_x = pt[0]/pt[2]*_f[0] + _c[0];
+            res_y = pt[1]/pt[2]*_f[0] + _c[1];
             return true;
         case Projection::equidistant:
             res_x = pt[0]/pt[2];
             res_y = pt[1]/pt[2];
             T const r = ceres::sqrt(res_x*res_x + res_y*res_y);
             T const factor = ceres::atan(r)/r;
-            res_x = res_x*factor*f[0] + c[0];
-            res_y = res_y*factor*f[0] + c[1];
+            res_x = res_x*factor*_f[0] + _c[0];
+            res_y = res_y*factor*_f[0] + _c[1];
             return true;
         }
         return false;
