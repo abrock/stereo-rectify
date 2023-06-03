@@ -5,6 +5,8 @@
 
 #include <fmt/core.h>
 
+#include <iostream>
+
 namespace Misc {
 
 double pos_fmod(double const num, double const mod);
@@ -17,6 +19,12 @@ template <typename S, typename... Args, typename Char = fmt::char_t<S>>
 inline void print(const S& format_str, Args&&... args) {
     fmt::print(format_str, args...);
     std::fflush(stdout);
+}
+
+template <typename S, typename... Args, typename Char = fmt::char_t<S>>
+inline void println(const S& format_str, Args&&... args) {
+    fmt::print(format_str, args...);
+    std::cout << std::endl;
 }
 
 }

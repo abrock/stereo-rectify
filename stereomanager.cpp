@@ -87,7 +87,10 @@ void StereoManager::run() {
     static cv::Mat empty(cam_target_l->size, CV_8UC1, cv::Scalar(0,0,0));
     cv::imshow(img_name, empty);
     cv::waitKey(1);
+
+    ParallelTime t;
     optimize();
+    Misc::println("Optimization: {}", t.print());
 
     if ("left" == preview || "right" == preview) {
         std::shared_ptr<Cam> cam = "left" == preview ? cam_l : cam_r;
@@ -97,14 +100,13 @@ void StereoManager::run() {
     std::cout << "Left cam:  " << cam_l->print() << std::endl;
     std::cout << "Right cam: " << cam_r->print() << std::endl;
 
-    ParallelTime t;
     std::cout << "Generating maps..." << std::flush;
     cv::Mat2f map_l = cam_l->simCamMap(cam_target_l);
     cv::Mat2f map_r = cam_r->simCamMap(cam_target_r);
     std::cout << "done: " << t.print() << std::endl;
 
     t.start();
-    auto clahe = cv::createCLAHE(4.0, {8,8});
+    auto clahe = cv::createCLAHE(clahe_clip_limit, {clahe_grid_size,clahe_grid_size});
 
     cv::Mat img_orig_l_grey, img_orig_r_grey;
     cv::cvtColor(*cam_l->img, img_orig_l_grey, cv::COLOR_BGR2GRAY);

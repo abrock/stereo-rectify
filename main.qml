@@ -160,6 +160,11 @@ Window {
                 text: "Run"
                 onClicked: manager.run();
             }
+            Button {
+                text: "Autorun after every settings change"
+                checkable: true
+                onClicked: manager.setAutoRun(checked);
+            }
         }
     }
 
