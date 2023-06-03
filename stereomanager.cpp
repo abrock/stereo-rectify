@@ -44,7 +44,7 @@ void StereoManager::setCLAHE(const bool checked, const QString &_clip_limit, con
         std::cerr << "Warning: grid size < 1 makes no sense, setting it to 1" << std::endl;
         clahe_grid_size = 1;
     }
-    fmt::print("New CLAHE settings: {}abled, clip limit: {:.3f}, grid size: {}\n", use_clahe ? "en" : "dis", clahe_clip_limit, clahe_grid_size);
+    Misc::print("New CLAHE settings: {}abled, clip limit: {:.3f}, grid size: {}\n", use_clahe ? "en" : "dis", clahe_clip_limit, clahe_grid_size);
 }
 
 void StereoManager::optimize() {
