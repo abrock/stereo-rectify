@@ -534,7 +534,7 @@ void Calib::optimizeStereoDirect2Cams(
     ceres_opts.max_num_iterations = 2000;
     //ceres_opts.num_linear_solver_threads = std::thread::hardware_concurrency();
 
-    std::cout << "###### Solving Calib::optimizeStereoDirect problem ######" << std::endl;
+    std::cout << "###### Solving Calib::optimizeStereoDirect2Cams problem ######" << std::endl;
     ceres::Solve(ceres_opts, &problem, &summary);
     std::cout << summary.FullReport() << std::endl << summary.BriefReport() << std::endl;
 
