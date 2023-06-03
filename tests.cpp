@@ -72,6 +72,14 @@ TEST(Extr, all) {
     }
 }
 
+TEST(Cam, str2type) {
+    ASSERT_EQ(Cam::Projection::rectilinear, Cam::str2type("Rectilinear"));
+    ASSERT_EQ(Cam::Projection::equidistant, Cam::str2type("Equidistant"));
+
+    ASSERT_EQ("rectilinear", Cam::type2str(Cam::Projection::rectilinear));
+    ASSERT_EQ("equidistant", Cam::type2str(Cam::Projection::equidistant));
+}
+
 
 int main(int argc, char** argv) {
     testing::InitGoogleTest(&argc, argv);

@@ -39,7 +39,7 @@ public:
 
     enum class Projection {rectilinear, equidistant};
 
-    static Projection str2type(std::string const& str);
+    static Projection str2type(std::string str);
 
     static std::string type2str(Projection const type);
 

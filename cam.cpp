@@ -5,12 +5,15 @@
 
 #include "extr.h"
 
+#include "misc.h"
+
 Cam::Cam()
 {
 
 }
 
-Cam::Projection Cam::str2type(const std::string &str) {
+Cam::Projection Cam::str2type(std::string str) {
+    str = Misc::to_lower(str);
     if ("rectilinear" == str) {
         return Projection::rectilinear;
     }
