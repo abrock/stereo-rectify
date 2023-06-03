@@ -53,6 +53,7 @@ add_executable(test
     extr.cpp
     misc.cpp
     point3d.cpp
+    stereomanager.cpp
     )
 
 foreach(target

@@ -27,6 +27,7 @@ void StereoManager::setMethod(const QString &str) {
     try {
         method = str2method(str.toStdString());
         std::cout << "Optimization method: " << str.toStdString() << std::endl;
+        autoRun();
     }  catch (std::exception const& e) {
         std::cout << "Setting optimization method failed: " << std::endl << e.what() << std::endl;
     }
@@ -34,6 +35,7 @@ void StereoManager::setMethod(const QString &str) {
 
 void StereoManager::setPreview(const QString &str) {
     preview = str.toLower().toStdString();
+    autoRun();
 }
 
 void StereoManager::setCLAHE(const bool checked, const QString &_clip_limit, const QString &_grid_size) {
@@ -45,6 +47,7 @@ void StereoManager::setCLAHE(const bool checked, const QString &_clip_limit, con
         clahe_grid_size = 1;
     }
     Misc::print("New CLAHE settings: {}abled, clip limit: {:.3f}, grid size: {}\n", use_clahe ? "en" : "dis", clahe_clip_limit, clahe_grid_size);
+    autoRun();
 }
 
 void StereoManager::optimize() {
@@ -71,6 +74,12 @@ void StereoManager::optimize() {
     }
 
     throw std::runtime_error("Optimization method not implemented in StereoManager::optimize()");
+}
+
+void StereoManager::autoRun() {
+    if (auto_run) {
+        run();
+    }
 }
 
 void StereoManager::run() {
@@ -126,4 +135,9 @@ void StereoManager::run() {
 
     cv::imshow(img_name, red_cyan);
     cv::waitKey(1);
+}
+
+void StereoManager::setAutoRun(const bool val) {
+    auto_run = val;
+    autoRun();
 }

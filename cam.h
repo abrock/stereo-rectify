@@ -14,13 +14,19 @@
 #include <opencv2/features2d.hpp>
 #include <opencv2/xfeatures2d.hpp>
 
+#include "stereomanager.h"
+
 class Observation;
+
+class StereoManager;
 
 class Cam : public QObject
 {
     Q_OBJECT
 public:
     Cam();
+
+    std::shared_ptr<StereoManager> manager;
 
     /**
      * @brief principal point in px

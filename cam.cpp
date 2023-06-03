@@ -39,6 +39,9 @@ void Cam::setProjection(const QString &str) {
     try {
         setProjection(str.toLower().toStdString());
         std::cout << "Projection type: " << type2str(proj) << ", cam: " << name << std::endl;
+        if (manager) {
+            manager->autoRun();
+        }
     }  catch (std::exception const& e) {
         std::cout << "Unable to set projection: " << std::endl << e.what() << std::endl;
     }
@@ -63,6 +66,9 @@ void Cam::setFocal(const double _f_mm, const double _crop_factor) {
 void Cam::setFocal(const QString &str) {
     setFocal(str.toDouble(), crop_factor);
     std::cout << "New focal length: " << f_mm << " for cam " << name << std::endl;
+    if (manager) {
+        manager->autoRun();
+    }
 }
 
 void Cam::setImg(const std::shared_ptr<cv::Mat> &_img) {

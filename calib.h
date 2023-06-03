@@ -11,6 +11,9 @@
 #include <runningstats/runningstats.h>
 namespace rs = runningstats;
 
+class Cam;
+class Point3D;
+
 class Calib : public QObject {
     Q_OBJECT
 

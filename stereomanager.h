@@ -8,6 +8,9 @@
 
 #include <ParallelTime/paralleltime.h>
 
+class Cam;
+class Calib;
+
 class StereoManager : public QObject {
     Q_OBJECT
 public:
@@ -40,8 +43,21 @@ public:
 
     Q_INVOKABLE void run();
 
+    /**
+     * @brief setAutoRun enables / disables running the preview automatically every time a setting is changed.
+     * @param val
+     */
+    Q_INVOKABLE void setAutoRun(bool const val);
+
+    /**
+     * @brief autoRun calls run() if auto_run is true.
+     */
+    void autoRun();
+
     void optimize();
 
+private:
+    bool auto_run = false;
 };
 
 #endif // STEREOMANAGER_H
