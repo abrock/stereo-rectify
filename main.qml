@@ -105,13 +105,10 @@ Window {
                 }
             }
             RowLayout {
-                width: parent.width
                 Text {
-                    width: 12
                     text: "Preview"
                 }
                 ComboBox {
-                    Layout.preferredWidth: camsettings_width
                     model: [ "red-cyan", "left", "right", "side-by-side" ]
                     currentIndex: settings.preview_type
                     onCurrentValueChanged: {
@@ -122,7 +119,6 @@ Window {
                 }
             }
             RowLayout {
-                width: parent.width
                 Button {
                     text: "Enhance contrast (CLAHE)"
                     checkable: true
@@ -135,7 +131,6 @@ Window {
                     Component.onCompleted: manager.setCLAHE(enhance_contrast.checked, ce_clip_limit.text, ce_grid_size.text)
                 }
                 Text {
-                    width: 120
                     text: "Clip limit"
                 }
                 TextField {
