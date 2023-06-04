@@ -489,6 +489,32 @@ struct StereoDirectCost2Cams {
     }
 };
 
+/**
+ * @brief The RotateMod90Cost struct punishes rotations around the z axis
+ * that are not close to 0, 90, 180 or 270°
+ */
+struct RotateMod90Cost {
+    double weight;
+
+    template<class T>
+    bool operator()(T const * const rot, T * residual) const {
+        residual[0] = rot[2];
+        while(residual[0] > T(M_PI_2)) {
+            residual[0] -= T(M_PI_2);
+        }
+        while(residual[0] < -T(M_PI_2)) {
+            residual[0] += T(M_PI_2);
+        }
+        return true;
+    }
+
+    static ceres::CostFunction* create(double const _weight = 1) {
+        return new ceres::AutoDiffCostFunction<RotateMod90Cost, 1, 3>(
+                    new RotateMod90Cost{_weight}
+                    );
+    }
+};
+
 void Calib::optimizeStereoDirect2Cams(
         std::shared_ptr<Cam> cam_l,
         std::shared_ptr<Cam> cam_r,
@@ -513,18 +539,16 @@ void Calib::optimizeStereoDirect2Cams(
         }
     }
     double const rotate_cost = 10*problem.NumResidualBlocks();
-    problem.AddResidualBlock(
-                RotatePitchYawCost::create(rotate_cost),
-                nullptr,
-                cam_r->extr.rot.val);
-    problem.AddResidualBlock(
-                RotatePitchYawCost::create(rotate_cost),
-                nullptr,
-                cam_target_l->extr.rot.val);
-    problem.AddResidualBlock(
-                RotatePitchYawCost::create(rotate_cost),
-                nullptr,
-                cam_target_r->extr.rot.val);
+    for (double * rot_block : {cam_r->extr.rot.val, cam_target_l->extr.rot.val, cam_target_r->extr.rot.val}) {
+        problem.AddResidualBlock(
+                    RotatePitchYawCost::create(rotate_cost),
+                    nullptr,
+                    rot_block);
+        problem.AddResidualBlock(
+                    RotateMod90Cost::create(rotate_cost),
+                    nullptr,
+                    rot_block);
+    }
 
     ceres::Solver::Options ceres_opts;
     ceres::Solver::Summary summary;
