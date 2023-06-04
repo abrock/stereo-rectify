@@ -169,6 +169,22 @@ void StereoManager::run() {
     }
     if ("side-by-side" == preview) {
         cv::hconcat(std::vector<cv::Mat>{img_l, img_r}, img);
+        for (std::shared_ptr<Observation> pt_l : cam_l->observations) {
+            std::shared_ptr<Observation> pt_r;
+            if (!pt_l->pt3d->findByCam(cam_r, pt_r)) {
+                continue;
+            }
+            cv::Vec2d pt2d_l = cam_l->mapPointForward(*cam_target_l, pt_l->get(), rotation);
+            cv::Vec2d pt2d_r = cam_r->mapPointForward(*cam_target_r, pt_r->get(), rotation);
+            pt2d_r[0] += cam_target_l->size.width;
+            cv::line(
+                        img,
+                        Misc::vec2pt(pt2d_l),
+                        Misc::vec2pt(pt2d_r),
+                        cv::Scalar(255,255,255),
+                        std::max<int>(1.0, cam_target_l->size.height/1000),
+                        cv::LINE_AA);
+        }
     }
     std::cout << "Merging: " << t.print() << std::endl;
 

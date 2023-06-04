@@ -46,8 +46,6 @@ int main(int argc, char ** argv) {
                                                 "Projection type of the right camera, either rectilinear or equidistant. Default is the projection type of the left camera",
                                                 false, "rectilinear",
                                                 "Projection type, either rectilinear or equidistant", cmd);
-
-
     cmd.parse(argc, argv);
 
     std::shared_ptr<cv::Mat> left = std::make_shared<cv::Mat>(cv::imread(left_img_arg.getValue(), cv::IMREAD_ANYCOLOR | cv::IMREAD_ANYDEPTH));

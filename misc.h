@@ -27,6 +27,8 @@ inline void println(const S& format_str, Args&&... args) {
     std::cout << std::endl;
 }
 
+cv::Point vec2pt(cv::Vec2d const& in);
+
 }
 
 #endif // MISC_H

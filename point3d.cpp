@@ -167,6 +167,10 @@ cv::Point2d Observation::projectPt() const {
     return {proj[0], proj[1]};
 }
 
+cv::Vec2d Observation::get() const {
+    return cv::Vec2d(pt.pt.x, pt.pt.y);
+}
+
 double Observation::error() const {
     return cv::norm(project() - cv::Vec2d(pt.pt.x, pt.pt.y));
 }

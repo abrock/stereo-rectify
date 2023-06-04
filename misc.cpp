@@ -22,5 +22,9 @@ std::string to_lower(const std::string &in) {
     return result;
 }
 
+cv::Point vec2pt(const cv::Vec2d &in) {
+    return {int(std::round(in[0])), int(std::round(in[1]))};
+}
+
 
 } // namespace Misc

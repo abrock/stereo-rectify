@@ -25,6 +25,8 @@ public:
     cv::Vec2d project() const;
     cv::Point2d projectPt() const;
 
+    cv::Vec2d get() const;
+
     double error() const;
 };
 
