@@ -135,11 +135,17 @@ void StereoManager::run() {
     Misc::println("Remapping: {}", t.print());
 
     t.start();
-    cv::Mat red_cyan = Misc::merge_red_cyan(img_l, img_r);
+    cv::Mat img;
+    if ("red-cyan" == preview) {
+        img = Misc::merge_red_cyan(img_l, img_r);
+    }
+    if ("side-by-side" == preview) {
+        cv::hconcat(std::vector<cv::Mat>{img_l, img_r}, img);
+    }
     std::cout << "Merging: " << t.print() << std::endl;
 
-    cv::imshow(img_name, red_cyan);
-    last_preview = red_cyan;
+    cv::imshow(img_name, img);
+    last_preview = img;
     cv::waitKey(1);
 }
 
