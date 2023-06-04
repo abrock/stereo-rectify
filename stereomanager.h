@@ -56,7 +56,10 @@ public:
 
     void optimize();
 
+    cv::Mat getGrey(const cv::Mat &input);
+    cv::Mat getRemapped(std::shared_ptr<Cam> cam, std::shared_ptr<Cam> target);
 private:
+    cv::Mat last_preview;
     bool auto_run = false;
 };
 

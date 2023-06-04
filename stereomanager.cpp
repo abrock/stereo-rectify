@@ -82,60 +82,64 @@ void StereoManager::autoRun() {
     }
 }
 
+cv::Mat StereoManager::getGrey(cv::Mat const& input) {
+    cv::Mat result;
+    cv::cvtColor(input, result, cv::COLOR_BGR2GRAY);
+    if (use_clahe) {
+        auto clahe = cv::createCLAHE(clahe_clip_limit, {clahe_grid_size,clahe_grid_size});
+        clahe->apply(result, result);
+    }
+    return result;
+}
+
+cv::Mat StereoManager::getRemapped(std::shared_ptr<Cam> cam, std::shared_ptr<Cam> target) {
+    cv::Mat src = getGrey(*cam->img);
+    cv::Mat result;
+    cv::Mat2f map = cam->simCamMap(target);
+    cv::remap(src, result, map, cv::noArray(), cv::INTER_LANCZOS4);
+    return result;
+}
+
 void StereoManager::run() {
     std::string const img_name = "preview";
-    static cv::Mat empty(cam_target_l->size, CV_8UC1, cv::Scalar(0,0,0));
-    cv::imshow(img_name, empty);
+    if (last_preview.empty()) {
+        static cv::Mat empty(cam_target_l->size, CV_8UC1, cv::Scalar(0,0,0));
+        cv::imshow(img_name, empty);
+    }
+    else {
+        last_preview *= 0.5;
+        cv::imshow(img_name, last_preview);
+    }
     cv::waitKey(1);
 
     ParallelTime t;
     optimize();
     Misc::println("Optimization: {}", t.print());
 
-    if ("left" == preview || "right" == preview) {
-        std::shared_ptr<Cam> cam = "left" == preview ? cam_l : cam_r;
-        return;
-    }
-
     std::cout << "Left cam:  " << cam_l->print() << std::endl;
     std::cout << "Right cam: " << cam_r->print() << std::endl;
 
-    std::cout << "Generating maps..." << std::flush;
-    cv::Mat2f map_l = cam_l->simCamMap(cam_target_l);
-    cv::Mat2f map_r = cam_r->simCamMap(cam_target_r);
-    std::cout << "done: " << t.print() << std::endl;
+    if ("left" == preview || "right" == preview) {
+        std::shared_ptr<Cam> cam        = "left" == preview ?        cam_l :        cam_r;
+        std::shared_ptr<Cam> target_cam = "left" == preview ? cam_target_l : cam_target_r;
+        cv::Mat img = getRemapped(cam, target_cam);
+        cv::imshow(img_name, img);
+        cv::waitKey(1);
+        last_preview = img;
+        return;
+    }
 
     t.start();
-    auto clahe = cv::createCLAHE(clahe_clip_limit, {clahe_grid_size,clahe_grid_size});
-
-    cv::Mat img_orig_l_grey, img_orig_r_grey;
-    cv::cvtColor(*cam_l->img, img_orig_l_grey, cv::COLOR_BGR2GRAY);
-    cv::cvtColor(*cam_r->img, img_orig_r_grey, cv::COLOR_BGR2GRAY);
-
-    cv::Mat img_orig_ce_l_grey, img_orig_ce_r_grey;
-    clahe->apply(img_orig_l_grey, img_orig_ce_l_grey);
-    clahe->apply(img_orig_r_grey, img_orig_ce_r_grey);
-    std::cout << "Applying CLAHE: " << t.print() << std::endl;
+    cv::Mat img_l = getRemapped(cam_l, cam_target_l);
+    cv::Mat img_r = getRemapped(cam_r, cam_target_r);
+    Misc::println("Remapping: {}", t.print());
 
     t.start();
-    cv::Mat img_l, img_r, img_l_grey, img_r_grey, img_l_ce, img_r_ce;
-    std::cout << "Remapping..." << std::flush;
-    cv::remap(*cam_l->img, img_l, map_l, cv::noArray(), cv::INTER_LANCZOS4);
-    cv::remap(*cam_r->img, img_r, map_r, cv::noArray(), cv::INTER_LANCZOS4);
-
-    cv::remap(img_orig_l_grey, img_l_grey, map_l, cv::noArray(), cv::INTER_LANCZOS4);
-    cv::remap(img_orig_r_grey, img_r_grey, map_r, cv::noArray(), cv::INTER_LANCZOS4);
-
-    cv::remap(img_orig_ce_l_grey, img_l_ce, map_l, cv::noArray(), cv::INTER_LANCZOS4);
-    cv::remap(img_orig_ce_r_grey, img_r_ce, map_r, cv::noArray(), cv::INTER_LANCZOS4);
-    std::cout << "done: " << t.print() << std::endl;
-
-    t.start();
-    cv::Mat red_cyan = Misc::merge_red_cyan(img_l_grey, img_r_grey);
-    cv::Mat red_cyan_ce = Misc::merge_red_cyan(img_l_ce, img_r_ce);
+    cv::Mat red_cyan = Misc::merge_red_cyan(img_l, img_r);
     std::cout << "Merging: " << t.print() << std::endl;
 
     cv::imshow(img_name, red_cyan);
+    last_preview = red_cyan;
     cv::waitKey(1);
 }
 
