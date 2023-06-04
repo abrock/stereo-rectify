@@ -32,6 +32,11 @@ Window {
         property string scale_result: "1.0"
         property string target_focal: "8"
         property double rotate: 0.0
+
+        property bool fix_left: false;
+        property string fix_left_x: "0";
+        property string fix_left_y: "0";
+        property string fix_left_z: "0";
     }
 
     property var camsettings_label_width: 150
@@ -91,6 +96,61 @@ Window {
                     Component.onCompleted: cam_r.setProjection(currentText)
                 }
             }
+            RowLayout {
+                Button {
+                    text: "Fix left cam orientation"
+                    checkable: true
+                    checked: settings.fix_left
+                    id: fix_left
+                    onClicked: {
+                        settings.fix_left = checked
+                        calib.setFixedLeftRot(fix_left.checked, fix_left_x.text, fix_left_y.text, fix_left_z.text)
+                    }
+                    Component.onCompleted: calib.setFixedLeftRot(fix_left.checked, fix_left_x.text, fix_left_y.text, fix_left_z.text)
+
+                }
+                Text {
+                    text: "X:"
+                }
+                TextField {
+                    Layout.preferredWidth: camsettings_width
+                    text: settings.fix_left_x
+                    id:fix_left_x
+                    onEditingFinished: {
+                        settings.fix_left_x = text
+                        calib.setFixedLeftRot(fix_left.checked, fix_left_x.text, fix_left_y.text, fix_left_z.text)
+                    }
+                    Component.onCompleted: calib.setFixedLeftRot(fix_left.checked, fix_left_x.text, fix_left_y.text, fix_left_z.text)
+                }
+                Text {
+                    text: "Y:"
+                }
+                TextField {
+                    Layout.preferredWidth: camsettings_width
+                    text: settings.fix_left_y
+                    id:fix_left_y
+                    onEditingFinished: {
+                        settings.fix_left_y = text
+                        calib.setFixedLeftRot(fix_left.checked, fix_left_x.text, fix_left_y.text, fix_left_z.text)
+                    }
+                    Component.onCompleted: calib.setFixedLeftRot(fix_left.checked, fix_left_x.text, fix_left_y.text, fix_left_z.text)
+                }
+                Text {
+                    text: "Z:"
+                }
+                TextField {
+                    Layout.preferredWidth: camsettings_width
+                    text: settings.fix_left_z
+                    id:fix_left_z
+                    onEditingFinished: {
+                        settings.fix_left_z = text
+                        calib.setFixedLeftRot(fix_left.checked, fix_left_x.text, fix_left_y.text, fix_left_z.text)
+                    }
+                    Component.onCompleted: calib.setFixedLeftRot(fix_left.checked, fix_left_x.text, fix_left_y.text, fix_left_z.text)
+                }
+
+            }
+
             RowLayout {
                 width: parent.width
                 Text {

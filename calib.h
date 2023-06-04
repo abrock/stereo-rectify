@@ -11,8 +11,11 @@
 #include <runningstats/runningstats.h>
 namespace rs = runningstats;
 
+#include "stereomanager.h"
+
 class Cam;
 class Point3D;
+class StereoManager;
 
 class Calib : public QObject {
     Q_OBJECT
@@ -23,6 +26,8 @@ private:
 public:
 
     std::vector<std::shared_ptr<Cam> > cams;
+
+    std::shared_ptr<StereoManager> manager;
 
     void computeMatches();
 
@@ -46,6 +51,11 @@ public:
     void plotResiduals() const;
 
     void triangulateAllRANSAC(const std::string &plot_prefix);
+
+    cv::Vec3d fixed_left_rot{0,0,0};
+    bool fix_left_rot = false;
+    Q_INVOKABLE void setFixedLeftRot(bool const fix, QString const& x, QString const& y, QString const& z);
+
 
     /**
      * @brief The idea of optimizeStereoDirect is to keep the extrinsics of the left camera zero,
@@ -71,7 +81,7 @@ public:
             std::shared_ptr<Cam> cam_target_r,
             const std::string &suffix = "");
 
-    static void optimizeStereoDirect2Cams(
+    void optimizeStereoDirect2Cams(
             std::shared_ptr<Cam> cam_l,
             std::shared_ptr<Cam> cam_r,
             std::shared_ptr<Cam> cam_target_l,

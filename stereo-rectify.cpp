@@ -88,6 +88,7 @@ int main(int argc, char ** argv) {
     cam_target_r->setFocal(cam_l->f_mm, cam_l->crop_factor);
 
     std::shared_ptr<Calib> calib = manager->calib = std::make_shared<Calib>();
+    calib->manager = manager;
 
     calib->cams.push_back(cam_l);
     calib->cams.push_back(cam_r);
@@ -163,6 +164,7 @@ int main(int argc, char ** argv) {
     engine.rootContext()->setContextProperty("cam_l", &*cam_l);
     engine.rootContext()->setContextProperty("cam_r", &*cam_r);
     engine.rootContext()->setContextProperty("manager", &*manager);
+    engine.rootContext()->setContextProperty("calib", &*calib);
 
     engine.load(url);
 

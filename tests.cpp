@@ -9,6 +9,8 @@ namespace rs = runningstats;
 #include "calib.h"
 #include "cam.h"
 
+#include "misc.h"
+
 double uni(double const max, std::mt19937_64& engine) {
     return std::uniform_real_distribution<double>(0, max)(engine);
 }
@@ -165,6 +167,26 @@ TEST(Cam, str2type) {
 
     ASSERT_EQ("rectilinear", Cam::type2str(Cam::Projection::rectilinear));
     ASSERT_EQ("equidistant", Cam::type2str(Cam::Projection::equidistant));
+}
+
+TEST(Misc, EulerAnglesToAngleAxis) {
+    cv::Vec3d axis;
+
+    axis = Misc::EulerAnglesToAngleAxis(0,0,0);
+    EXPECT_NEAR(cv::norm(axis), 0, 1e-10) << axis;
+
+    axis = Misc::EulerAnglesToAngleAxis(0,0,90);
+    EXPECT_NEAR(cv::norm(axis), M_PI_2, 1e-10) << axis << std::endl;
+    EXPECT_NEAR(axis[2], -M_PI_2, 1e-10) << axis << std::endl;
+
+    axis = Misc::EulerAnglesToAngleAxis(0,90,0);
+    EXPECT_NEAR(cv::norm(axis), M_PI_2, 1e-10) << axis << std::endl;
+    EXPECT_NEAR(axis[1], -M_PI_2, 1e-10) << axis << std::endl;
+
+    axis = Misc::EulerAnglesToAngleAxis(90,0,0);
+    EXPECT_NEAR(cv::norm(axis), M_PI_2, 1e-10) << axis << std::endl;
+    EXPECT_NEAR(axis[0], -M_PI_2, 1e-10) << axis << std::endl;
+
 }
 
 

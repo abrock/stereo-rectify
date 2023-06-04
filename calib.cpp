@@ -549,6 +549,11 @@ void Calib::optimizeStereoDirect2Cams(
                     nullptr,
                     rot_block);
     }
+    if (fix_left_rot) {
+        cam_target_l->extr.rot = fixed_left_rot;
+        problem.SetParameterBlockConstant(cam_target_l->extr.rot.val);
+        problem.SetParameterBlockConstant(cam_target_r->extr.rot.val);
+    }
 
     ceres::Solver::Options ceres_opts;
     ceres::Solver::Summary summary;
@@ -674,4 +679,17 @@ void Calib::plotResiduals() const {
     }
 }
 
+void Calib::setFixedLeftRot(const bool fix, const QString &x, const QString &y, const QString &z) {
+    bool const old_fixed = fix_left_rot;
+    cv::Vec3d const old_left_rot = fixed_left_rot;
 
+    fix_left_rot = fix;
+    fixed_left_rot = Misc::EulerAnglesToAngleAxis(x.toDouble(), y.toDouble(), z.toDouble());
+
+    if (old_fixed != fix_left_rot || cv::norm(fixed_left_rot - old_left_rot) > 1e-6) {
+        if (manager) {
+            manager->optimization_necessary = true;
+            manager->autoRun();
+        }
+    }
+}

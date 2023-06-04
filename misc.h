@@ -29,6 +29,8 @@ inline void println(const S& format_str, Args&&... args) {
 
 cv::Point vec2pt(cv::Vec2d const& in);
 
+cv::Vec3d EulerAnglesToAngleAxis(double const x, double const y, double const z);
+
 }
 
 #endif // MISC_H

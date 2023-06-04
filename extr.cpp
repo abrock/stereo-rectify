@@ -21,6 +21,9 @@ cv::Vec3d Extr::cam2world(const cv::Vec3d &in) const {
 
 cv::Vec3d Extr::normalize(const cv::Vec3d &in) {
     double const norm = cv::norm(in);
+    if (norm < 1e-6) {
+        return in;
+    }
     double const target_norm = Misc::pos_fmod(norm, 2*M_PI);
     return in * target_norm / norm;
 }
