@@ -32,7 +32,11 @@ std::string Cam::type2str(const Cam::Projection type) {
 }
 
 void Cam::setProjection(const std::string &str) {
+    Projection const old_proj = proj;
     proj = str2type(str);
+    if (proj != old_proj && manager) {
+        manager->optimization_necessary = true;
+    }
 }
 
 void Cam::setProjection(const QString &str) {
@@ -57,10 +61,14 @@ void Cam::setSize(const cv::Size &s) {
 
 void Cam::setFocal(const double _f_mm, const double _crop_factor) {
     CHECK_GT(diag, 0);
+    double const old_f = f;
     double const diag_mm = std::sqrt(36*36 + 24*24);
     f_mm = _f_mm;
     crop_factor = _crop_factor;
     f = f_mm * crop_factor * diag / diag_mm;
+    if (std::abs(f - old_f) > 1e-4 && manager) {
+        manager->optimization_necessary = true;
+    }
 }
 
 void Cam::setFocal(const QString &str) {
@@ -149,22 +157,72 @@ cv::Vec2d Cam::getCenteredPoint(const cv::KeyPoint &pt) const {
     return result;
 }
 
-cv::Mat2f Cam::simCamMap(std::shared_ptr<Cam> target) {
+cv::Vec2d rotate(cv::Vec2d const& pt, cv::Vec2d const& center, double const cos, double const sin) {
+    cv::Vec2d result = pt -center;
+    result = cv::Vec2d(
+                cos*result[0] - sin*result[1],
+                sin*result[0] + cos*result[1]
+                );
+    return result+center;
+}
+
+cv::Vec3d rotate_z(cv::Vec3d const& pt, double const cos, double const sin) {
+    return {
+               cos*pt[0] - sin*pt[1],
+               sin*pt[0] + cos*pt[1],
+               pt[2]
+           };
+}
+
+cv::Vec2d Cam::mapPointReverse(
+        Cam& target,
+        cv::Vec2d const& tgt,
+        double const rot_c,
+        double const rot_s) {
+    double const fake_loc[3] = {0,0,0};
+    cv::Point2d target_px(tgt[0],tgt[1]);
+    cv::Vec3d target_3d = target.unproject(target_px);
+    cv::Vec3d world_3d;
+    Extr::cam2world(target_3d.val, fake_loc, target.extr.rot.val, world_3d.val);
+    cv::Vec3d src_3d;
+    Extr::world2cam(world_3d.val, fake_loc, extr.rot.val, src_3d.val);
+    src_3d = rotate_z(src_3d, rot_c, rot_s);
+    return project(src_3d);
+}
+
+cv::Vec2d Cam::mapPointReverse(Cam& target, cv::Vec2d const& tgt, double const added_rot) {
+    return mapPointReverse(target, tgt, std::cos(added_rot), std::sin(added_rot));
+}
+
+cv::Vec2d Cam::mapPointForward(
+        Cam &target,
+        const cv::Vec2d &src,
+        const double rot_c,
+        const double rot_s) {
+    double const fake_loc[3] = {0,0,0};
+    cv::Point2d const src_px(src[0], src[1]);
+    cv::Vec3d const src_3d = rotate_z(unproject(src_px), rot_c, -rot_s);
+    cv::Vec3d world_3d;
+    Extr::cam2world(src_3d.val, fake_loc, extr.rot.val, world_3d.val);
+    cv::Vec3d tgt_3d;
+    Extr::world2cam(world_3d.val, fake_loc, target.extr.rot.val, tgt_3d.val);
+    return target.project(tgt_3d);
+}
+
+cv::Vec2d Cam::mapPointForward(Cam& target, cv::Vec2d const& tgt, double const added_rot) {
+    return mapPointForward(target, tgt, std::cos(added_rot), std::sin(added_rot));
+}
+
+cv::Mat2f Cam::simCamMap(std::shared_ptr<Cam> target, double const added_rot) {
     cv::Mat2f map(target->size);
 
-    double const fake_loc[3] = {0,0,0};
+    double const cos = std::cos(M_PI*added_rot/180.0);
+    double const sin = std::sin(M_PI*added_rot/180.0);
 
 #pragma omp parallel for schedule(dynamic, 100)
     for (int yy = 0; yy < map.rows; ++yy) {
         for (int xx = 0; xx < map.cols; ++xx) {
-            cv::Point target_px(xx,yy);
-            cv::Vec3d target_3d = target->unproject(target_px);
-            cv::Vec3d world_3d;
-            Extr::cam2world(target_3d.val, fake_loc, target->extr.rot.val, world_3d.val);
-            cv::Vec3d src_3d;
-            Extr::world2cam(world_3d.val, fake_loc, extr.rot.val, src_3d.val);
-            cv::Vec2d src_px = project(src_3d);
-            map(target_px) = src_px;
+            map[yy][xx] = mapPointReverse(*target, cv::Vec2d(xx,yy), cos, sin);
         }
     }
     return map;

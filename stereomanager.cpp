@@ -25,29 +25,43 @@ StereoManager::Method StereoManager::str2method(std::string str) {
 
 void StereoManager::setMethod(const QString &str) {
     try {
+        Method const old_method = method;
         method = str2method(str.toStdString());
         std::cout << "Optimization method: " << str.toStdString() << std::endl;
-        autoRun();
+        if (method != old_method) {
+            optimization_necessary = true;
+            autoRun();
+        }
     }  catch (std::exception const& e) {
         std::cout << "Setting optimization method failed: " << std::endl << e.what() << std::endl;
     }
 }
 
 void StereoManager::setPreview(const QString &str) {
+    std::string const old_preview = preview;
     preview = str.toLower().toStdString();
-    autoRun();
+    if (preview != old_preview) {
+        autoRun();
+    }
 }
 
 void StereoManager::setCLAHE(const bool checked, const QString &_clip_limit, const QString &_grid_size) {
+    bool changed = (checked != use_clahe);
     use_clahe = checked;
+    double const old_clip_limit = clahe_clip_limit;
+    double const old_grid_size = clahe_grid_size;
     clahe_clip_limit = _clip_limit.toDouble();
     clahe_grid_size = _grid_size.toDouble();
     if (clahe_grid_size < 1) {
         std::cerr << "Warning: grid size < 1 makes no sense, setting it to 1" << std::endl;
         clahe_grid_size = 1;
     }
+    changed |= (std::abs(clahe_clip_limit - old_clip_limit) > 1e-6);
+    changed |= (clahe_grid_size != old_grid_size);
     Misc::print("New CLAHE settings: {}abled, clip limit: {:.3f}, grid size: {}\n", use_clahe ? "en" : "dis", clahe_clip_limit, clahe_grid_size);
-    autoRun();
+    if (changed) {
+        autoRun();
+    }
 }
 
 void StereoManager::optimize() {
@@ -95,13 +109,23 @@ cv::Mat StereoManager::getGrey(cv::Mat const& input) {
 cv::Mat StereoManager::getRemapped(std::shared_ptr<Cam> cam, std::shared_ptr<Cam> target) {
     cv::Mat src = getGrey(*cam->img);
     cv::Mat result;
-    cv::Mat2f map = cam->simCamMap(target);
+    cv::Mat2f map = cam->simCamMap(target, rotation);
     cv::remap(src, result, map, cv::noArray(), cv::INTER_LANCZOS4);
     return result;
 }
 
+cv::Size operator *(double const scale, cv::Size const& s) {
+    return {int(std::round(scale*s.width)), int(std::round(scale*s.height))};
+}
+
 void StereoManager::run() {
+    ParallelTime total_time;
     std::string const img_name = "preview";
+
+    for (auto c : {cam_target_l, cam_target_r}) {
+        c->setSize(scale_result * cam_l->size);
+        c->setFocal(target_focal, 1.0);
+    }
     if (last_preview.empty()) {
         static cv::Mat empty(cam_target_l->size, CV_8UC1, cv::Scalar(0,0,0));
         cv::imshow(img_name, empty);
@@ -113,8 +137,11 @@ void StereoManager::run() {
     cv::waitKey(1);
 
     ParallelTime t;
-    optimize();
-    Misc::println("Optimization: {}", t.print());
+    if (optimization_necessary) {
+        optimize();
+        optimization_necessary = false;
+        Misc::println("Optimization: {}", t.print());
+    }
 
     std::cout << "Left cam:  " << cam_l->print() << std::endl;
     std::cout << "Right cam: " << cam_r->print() << std::endl;
@@ -126,6 +153,7 @@ void StereoManager::run() {
         cv::imshow(img_name, img);
         cv::waitKey(1);
         last_preview = img;
+        Misc::println("Total time: {}", total_time.print());
         return;
     }
 
@@ -147,6 +175,31 @@ void StereoManager::run() {
     cv::imshow(img_name, img);
     last_preview = img;
     cv::waitKey(1);
+    Misc::println("Total time: {}", total_time.print());
+}
+
+void StereoManager::setScaleResult(const QString &str) {
+    double const old_scale_result = scale_result;
+    scale_result = std::min(5.0, std::max(.1, str.toDouble()));
+    if (std::abs(scale_result - old_scale_result) > 1e-6) {
+        autoRun();
+    }
+}
+
+void StereoManager::setTargetFocal(const QString &str) {
+    double const old_target_focal = target_focal;
+    target_focal = std::max(.1, str.toDouble());
+    if (std::abs(target_focal - old_target_focal) > 1e-6) {
+        autoRun();
+    }
+}
+
+void StereoManager::setRotation(const double val) {
+    double const old_val = rotation;
+    rotation = val;
+    if (std::abs(old_val - rotation) > 1e-6) {
+        autoRun();
+    }
 }
 
 void StereoManager::setAutoRun(const bool val) {

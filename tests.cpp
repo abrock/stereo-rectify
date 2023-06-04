@@ -9,6 +9,93 @@ namespace rs = runningstats;
 #include "calib.h"
 #include "cam.h"
 
+double uni(double const max, std::mt19937_64& engine) {
+    return std::uniform_real_distribution<double>(0, max)(engine);
+}
+
+double uni_symmetric(double const max, std::mt19937_64& engine) {
+    return std::uniform_real_distribution<double>(-max, max)(engine);
+}
+
+cv::Vec3d random_rot(std::mt19937_64& engine) {
+    return {
+        uni_symmetric(.3, engine),
+        uni_symmetric(.3, engine),
+        uni_symmetric(M_PI, engine)
+    };
+}
+
+void randomize_loc(Cam& cam, std::mt19937_64& engine) {
+    cam.extr.loc = {
+        uni_symmetric(100, engine),
+        uni_symmetric(100, engine),
+        uni_symmetric(100, engine)
+    };
+}
+
+TEST(Cam, mapping) {
+    std::shared_ptr<Cam> cam1 = std::make_shared<Cam>();
+    std::shared_ptr<Cam> cam2 = std::make_shared<Cam>();
+
+    cam1->setSize({1000,2000});
+    cam2->setSize({2000,1000});
+
+    cam1->setFocal(40, 1);
+    cam2->setFocal(50, 1);
+
+    std::mt19937_64 engine(0xBEEBBEEB);
+
+    // Use random location for the camera to make sure it's ignored
+    randomize_loc(*cam1, engine);
+    randomize_loc(*cam2, engine);
+
+    size_t const num_tests = 1'000;
+    double rotation = 0;
+    // Simple test without any rotation
+    for (size_t ii = 0; ii < num_tests; ++ii) {
+        rotation = 0;
+        cv::Vec2d const src_pt(uni(cam1->size.width, engine), uni(cam1->size.height, engine));
+        cv::Vec2d const tgt_pt = cam1->mapPointForward(*cam2, src_pt, rotation);
+        cv::Vec2d const src_remapped = cam1->mapPointReverse(*cam2, tgt_pt, rotation);
+        for (size_t jj = 0; jj < 2; ++jj) {
+            ASSERT_NEAR(src_pt[jj], src_remapped[jj], 1e-4) << "#" << ii << ", src: " << src_pt << ", tgt: " << tgt_pt << ", remapped: " << src_remapped;
+        }
+    }
+    // Using the added rotation
+    for (size_t ii = 0; ii < num_tests; ++ii) {
+        rotation = uni(360, engine);
+        cv::Vec2d const src_pt(uni(cam1->size.width, engine), uni(cam1->size.height, engine));
+        cv::Vec2d const tgt_pt = cam1->mapPointForward(*cam2, src_pt, rotation);
+        cv::Vec2d const src_remapped = cam1->mapPointReverse(*cam2, tgt_pt, rotation);
+        for (size_t jj = 0; jj < 2; ++jj) {
+            ASSERT_NEAR(src_pt[jj], src_remapped[jj], 1e-4) << "#" << ii << ", src: " << src_pt << ", tgt: " << tgt_pt << ", remapped: " << src_remapped;
+        }
+    }
+    // Only random orientation
+    for (size_t ii = 0; ii < num_tests; ++ii) {
+        rotation = 0;
+        cam1->extr.rot = random_rot(engine);
+        cam2->extr.rot = random_rot(engine);
+        cv::Vec2d const src_pt(uni(cam1->size.width, engine), uni(cam1->size.height, engine));
+        cv::Vec2d const tgt_pt = cam1->mapPointForward(*cam2, src_pt, rotation);
+        cv::Vec2d const src_remapped = cam1->mapPointReverse(*cam2, tgt_pt, rotation);
+        for (size_t jj = 0; jj < 2; ++jj) {
+            ASSERT_NEAR(src_pt[jj], src_remapped[jj], 1e-4) << "#" << ii << ", src: " << src_pt << ", tgt: " << tgt_pt << ", remapped: " << src_remapped;
+        }
+    }
+    // Random orientation and additional rotation
+    for (size_t ii = 0; ii < num_tests; ++ii) {
+        rotation = uni(360, engine);
+        cam1->extr.rot = random_rot(engine);
+        cam2->extr.rot = random_rot(engine);
+        cv::Vec2d const src_pt(uni(cam1->size.width, engine), uni(cam1->size.height, engine));
+        cv::Vec2d const tgt_pt = cam1->mapPointForward(*cam2, src_pt, rotation);
+        cv::Vec2d const src_remapped = cam1->mapPointReverse(*cam2, tgt_pt, rotation);
+        for (size_t jj = 0; jj < 2; ++jj) {
+            ASSERT_NEAR(src_pt[jj], src_remapped[jj], 1e-4) << "#" << ii << ", src: " << src_pt << ", tgt: " << tgt_pt << ", remapped: " << src_remapped;
+        }
+    }
+}
 
 TEST(Cam, project_unproject) {
     std::mt19937_64 engine(0xBEEBBEEB);

@@ -31,7 +31,7 @@ int main(int argc, char ** argv) {
     TCLAP::ValueArg<std::string> left_img_arg("l", "left", "left input image", true, "", "left input image", cmd);
     TCLAP::ValueArg<std::string> right_img_arg("r", "right", "right input image", true, "", "right input image", cmd);
 
-    TCLAP::ValueArg<double> focal_arg("f", "focal", "Focal length of the left image", true, 0, "Focal length of the left image", cmd);
+    TCLAP::ValueArg<double> focal_arg("f", "focal", "Focal length of the left image", false, 12, "Focal length of the left image", cmd);
     TCLAP::ValueArg<double> focal_right_arg("", "focal-r", "Focal length of the right image. Default is the focal length of the left image",
                                             false, -1, "Focal length", cmd);
 

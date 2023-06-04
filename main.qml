@@ -28,6 +28,10 @@ Window {
         property bool enhance_contrast: false
         property string ce_clip_limit: "4.0"
         property string ce_grid_size: "8"
+
+        property string scale_result: "1.0"
+        property string target_focal: "8"
+        property double rotate: 0.0
     }
 
     property var camsettings_label_width: 150
@@ -144,7 +148,6 @@ Window {
                     Component.onCompleted: manager.setCLAHE(enhance_contrast.checked, ce_clip_limit.text, ce_grid_size.text)
                 }
                 Text {
-                    width: 120
                     text: "Grid size"
                 }
                 TextField {
@@ -158,6 +161,49 @@ Window {
                     Component.onCompleted: manager.setCLAHE(enhance_contrast.checked, ce_clip_limit.text, ce_grid_size.text)
                 }
             }
+            RowLayout {
+                Text {
+                    text: "Scale result: "
+                }
+                TextField {
+                    text: settings.scale_result
+                    id: scale_result
+                    Layout.preferredWidth: 60
+                    onEditingFinished: {
+                        settings.scale_result = text
+                        manager.setScaleResult(text)
+                    }
+                    Component.onCompleted: manager.setScaleResult(text)
+                }
+                Text {
+                    text: "Target focal length: "
+                }
+                TextField {
+                    text: settings.target_focal
+                    id: target_focal
+                    Layout.preferredWidth: 60
+                    onEditingFinished: {
+                        settings.target_focal = text
+                        manager.setTargetFocal(text)
+                    }
+                    Component.onCompleted: manager.setTargetFocal(text)
+                }
+            }
+            RowLayout {
+                Text {
+                    text: "Rotate result"
+                }
+                Slider {
+                    from: -30
+                    to: 30
+                    value: settings.rotate
+                    onMoved: {
+                        settings.rotate = value
+                        manager.setRotation(value)
+                    }
+                }
+            }
+
             RowLayout {
                 Button {
                     text: "Run"

@@ -20,7 +20,7 @@ class Observation;
 
 class StereoManager;
 
-class Cam : public QObject
+class Cam : public QObject, std::enable_shared_from_this<Cam>
 {
     Q_OBJECT
 public:
@@ -149,7 +149,11 @@ public:
 
     bool validSrcPx(const cv::Point2d &src_px) const;
 
-    cv::Mat2f simCamMap(std::shared_ptr<Cam> target);
+    cv::Mat2f simCamMap(std::shared_ptr<Cam> target, const double added_rot = 0);
+    cv::Vec2d mapPointReverse(Cam& target, const cv::Vec2d &tgt, const double rot_c, const double rot_s);
+    cv::Vec2d mapPointReverse(Cam& target, const cv::Vec2d &tgt, const double added_rot);
+    cv::Vec2d mapPointForward(Cam& target, const cv::Vec2d &tgt, const double rot_c, const double rot_st);
+    cv::Vec2d mapPointForward(Cam& target, const cv::Vec2d &tgt, const double added_rot);
 };
 
 #endif // CAM_H

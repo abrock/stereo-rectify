@@ -43,6 +43,15 @@ public:
 
     Q_INVOKABLE void run();
 
+    double scale_result = 1.0;
+    Q_INVOKABLE void setScaleResult(QString const& str);
+
+    double target_focal = 12;
+    Q_INVOKABLE void setTargetFocal(QString const& str);
+
+    double rotation = 0;
+    Q_INVOKABLE void setRotation(double const val);
+
     /**
      * @brief setAutoRun enables / disables running the preview automatically every time a setting is changed.
      * @param val
@@ -54,6 +63,7 @@ public:
      */
     void autoRun();
 
+    bool optimization_necessary = true;
     void optimize();
 
     cv::Mat getGrey(const cv::Mat &input);
