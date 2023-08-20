@@ -274,6 +274,10 @@ Window {
                     checkable: true
                     onClicked: manager.setAutoRun(checked);
                 }
+                Button {
+                    text: "Save"
+                    onClicked: manager.save();
+                }
             }
         }
     }

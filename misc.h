@@ -15,16 +15,15 @@ cv::Mat merge_red_cyan(cv::Mat const& a, cv::Mat const& b);
 
 std::string to_lower(std::string const& in);
 
-template <typename S, typename... Args, typename Char = fmt::char_t<S>>
-inline void print(const S& format_str, Args&&... args) {
-    fmt::print(format_str, args...);
+template <typename... Args>
+inline void print(fmt::format_string<Args...> s, Args&&... args) {
+    fmt::print(s, std::forward<Args>(args)...);
     std::fflush(stdout);
 }
 
-template <typename S, typename... Args, typename Char = fmt::char_t<S>>
-inline void println(const S& format_str, Args&&... args) {
-    fmt::print(format_str, args...);
-    std::cout << std::endl;
+template <typename... Args>
+inline void println(fmt::format_string<Args...> s, Args&&... args) {
+    std::cout << fmt::format(s, std::forward<Args>(args)...) << std::endl;
 }
 
 cv::Point vec2pt(cv::Vec2d const& in);

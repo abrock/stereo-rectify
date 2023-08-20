@@ -68,6 +68,11 @@ public:
 
     cv::Mat getGrey(const cv::Mat &input);
     cv::Mat getRemapped(std::shared_ptr<Cam> cam, std::shared_ptr<Cam> target);
+
+    /**
+     * @brief save saves the current image shown to the user to the disk.
+     */
+    Q_INVOKABLE void save();
 private:
     cv::Mat last_preview;
     bool auto_run = false;

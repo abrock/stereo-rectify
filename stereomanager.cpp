@@ -9,6 +9,9 @@
 
 #include <fmt/core.h>
 
+#include <filesystem>
+namespace fs = std::filesystem;
+
 StereoManager::Method StereoManager::str2method(std::string str) {
     str = Misc::to_lower(str);
     if ("simple" == str) {
@@ -116,6 +119,18 @@ cv::Mat StereoManager::getRemapped(std::shared_ptr<Cam> cam, std::shared_ptr<Cam
 
 cv::Size operator *(double const scale, cv::Size const& s) {
     return {int(std::round(scale*s.width)), int(std::round(scale*s.height))};
+}
+
+void StereoManager::save() {
+    Misc::println("Left filename: {}", cam_l->fn);
+    Misc::println("Right filename: {}", cam_r->fn);
+    fs::path src_dir = fs::path(cam_l->fn).parent_path();
+    std::string fn_l = fs::path(cam_l->fn).filename().string();
+    std::string fn_r = fs::path(cam_r->fn).filename().string();
+    std::string const tgt_fn = (src_dir / fs::path(fn_l + "-stereo-" + fn_r)).string();
+    Misc::println("Target fn: {}", tgt_fn);
+    cv::imwrite(tgt_fn, last_preview);
+    Misc::println("Saving image done.");
 }
 
 void StereoManager::run() {
