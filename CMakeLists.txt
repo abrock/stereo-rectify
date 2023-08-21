@@ -56,9 +56,15 @@ add_executable(test
     stereomanager.cpp
     )
 
+add_executable(stereo-sort
+    stereo-sort.cpp
+    misc.cpp
+)
+
 foreach(target
         stereo-rectify
         test
+        stereo-sort
         )
     target_link_libraries(${target}
         ceres
@@ -76,6 +82,12 @@ foreach(target
       PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Quick)
 
 endforeach()
+
+find_package(libjpeg-turbo REQUIRED)
+link_directories(/usr/lib/x86_64-linux-gnu/)
+target_link_libraries(stereo-sort
+    libraw.so
+)
 
 target_link_libraries(test
     GTest::gtest
