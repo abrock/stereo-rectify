@@ -175,11 +175,11 @@ public:
         std::string tgt_l = tgt_dir + "_" + name_l + src_l.extension().string();
         std::string tgt_r = tgt_dir + "_" + name_r + src_r.extension().string();
 
-        println("Moving {} -> {}", src_l.string(), tgt_l);
-        println("Moving {} -> {}", src_r.string(), tgt_r);
+        fs::path const tgt_path_l = output_dir / tgt_dir / tgt_l;
+        fs::path const tgt_path_r = output_dir / tgt_dir / tgt_r;
 
-        fs::path const tgt_path_l = output_dir / tgt_l;
-        fs::path const tgt_path_r = output_dir / tgt_r;
+        println("Moving {} -> {}", src_l.string(), tgt_path_l.string());
+        println("Moving {} -> {}", src_r.string(), tgt_path_r.string());
 
         if (fs::exists(tgt_path_l) || fs::exists(tgt_path_r)) {
             if (fs::exists(tgt_path_l)) {
@@ -194,10 +194,23 @@ public:
             throw std::runtime_error("Target paths for left and right image are identical: " + tgt_path_r.string());
         }
 
-        fs::create_directories(output_dir);
+        fs::create_directories(output_dir / tgt_dir);
 
-        fs::rename(src_l, tgt_l);
-        fs::rename(src_r, tgt_r);
+        fs::rename(src_l, tgt_path_l);
+        fs::rename(src_r, tgt_path_r);
+
+        files_l.erase(files_l.begin() + index_l);
+        files_r.erase(files_r.begin() + index_r);
+        if (files_l.empty()) {
+            println("files_l is empty, stopping");
+            exit(EXIT_SUCCESS);
+        }
+        if (files_r.empty()) {
+            println("files_r is empty, stopping");
+            exit(EXIT_SUCCESS);
+        }
+        index_l = std::min(index_l, files_l.size()-1);
+        index_r = std::min(index_r, files_r.size()-1);
     }
 
     void run() {
@@ -231,6 +244,8 @@ int main(int argc, char ** argv) {
     mngr.input_dir_l = argv[1];
     mngr.input_dir_r = argv[2];
     mngr.output_dir = argv[3];
+
+    println("input_l: {}\ninput_r: {}\noutput: {}\n", mngr.input_dir_l.string(), mngr.input_dir_r.string(), mngr.output_dir.string());
 
     mngr.init();
 
