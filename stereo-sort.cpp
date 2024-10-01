@@ -217,6 +217,13 @@ public:
         cv::imshow(name_l, read_img_or_thumb(files_l[index_l]));
         cv::imshow(name_r, read_img_or_thumb(files_r[index_r]));
 
+        println("Remaining images left: {}, right: {}", files_l.size(), files_r.size());
+        std::cout << "Usage: " << std::endl
+                  << "q: Exit" << std::endl
+                  << "w: Switch to the next image in the window that has the focus." << std::endl
+                  << "s: Switch to the previousy image." << std::endl
+                  << "d: Move the currently displayed pair of images from their current location to the target directory and rename them." << std::endl;
+
         char const key = cv::waitKey(0);
         active_window = active_window_name();
         Misc::trim(active_window);
